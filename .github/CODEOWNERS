@@ -1,0 +1,13 @@
+# Every change is reviewed by a maintainer.
+* @innerluxesdev
+
+# The names and sentences come from the Electron, Microsoft, Apple, electron-builder, Electron Forge and Tauri pages, and the readers and the checks decide every line of the report; changes need extra care.
+/src/data.js @innerluxesdev
+/research/ @innerluxesdev
+/src/json.js @innerluxesdev
+/src/yaml.js @innerluxesdev
+/src/scan.js @innerluxesdev
+/src/electron.js @innerluxesdev
+/src/tauri.js @innerluxesdev
+/src/files.js @innerluxesdev
+/src/check.js @innerluxesdev
