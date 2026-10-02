@@ -1,0 +1,24 @@
+{
+  "productName": "Tidewater Sync",
+  "version": "0.4.1",
+  "identifier": "com.example.tidewatersync",
+  "bundle": {
+    "active": true,
+    "createUpdaterArtifacts": true,
+    "windows": {
+      "signCommand": "sign-tool --file %1"
+    },
+    "macOS": {
+      "signingIdentity": "Developer ID Application: Tidewater Ltd (ABCDE12345)",
+      "hardenedRuntime": true
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "FAKE-TEST-PUBLIC-KEY-placeholder-not-a-real-key",
+      "endpoints": [
+        "https://releases.example.com/{{target}}/{{arch}}/{{current_version}}"
+      ]
+    }
+  }
+}

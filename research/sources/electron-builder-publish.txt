@@ -1,0 +1,1247 @@
+Source: https://www.electron.build/docs/publish
+Text taken from the saved page; markup is flattened.
+
+On this page
+Upgrading from v26?
+Many configuration keys were renamed or restructured in v27 (e.g. mac.sign, win.sign, electronGet, asar, nativeModules, snapcraft). Run electron-builder migrate-schema to rewrite your config automatically, then skim What's New in v27 and the full v27 Breaking Changes.
+
+The publish key contains a set of options instructing electron-builder on how it should publish artifacts and build update info files for auto update.
+
+String | Object | Array<Object | String> where Object it is Keygen, Generic Server, GitHub, S3, Spaces, R2 or Snap Store options. Order is important — first item will be used as a default auto-update server. Can be specified in the top-level configuration or any platform- (mac, linux, win) or target- (e.g. nsis) specific configuration.
+
+Note that when using a generic server, you have to upload the built application and metadata files yourself.
+
+Travis and AppVeyor support publishing artifacts. But it requires additional configuration for each CI and you need to configure what to publish.
+electron-builder makes publishing dead simple.
+
+!!! important "Publishing Must Be Explicitly Requested"
+Publishing is not performed automatically. You must explicitly request publishing using the --publish CLI flag (e.g., --publish always, --publish onTag, --publish onTagOrDraft) or by setting the publish option in your configuration.
+
+If GH_TOKEN or GITHUB_TOKEN is defined — defaults to [{provider: "github"}].
+
+If KEYGEN_TOKEN is defined and GH_TOKEN or GITHUB_TOKEN is not — defaults to [{provider: "keygen"}].
+
+If GITHUB_RELEASE_TOKEN is defined, it will be used instead of (GH_TOKEN or GITHUB_TOKEN) to publish your release.
+
+- e.g. mac: export GITHUB_RELEASE_TOKEN=<my token>
+
+- the GITHUB_TOKEN will still be used when your app checks for updates, etc.
+
+- you could make your GITHUB_TOKEN "Read-only" when creating a fine-grained personal access token, and "Read and write" for the GITHUB_RELEASE_TOKEN.
+
+- "Contents" fine-grained permission was sufficient. (at time of writing - Apr 2024)
+
+Implicit publishing was removed in v27
+In v26 and earlier, electron-builder auto-detected when to publish based on CI environment conditions (npm lifecycle event, a git tag in CI, etc.). As of v27 this implicit behavior is removed — publishing never happens unless you request it. This closes a hole where unfinished work or secrets could be published unintentionally.Explicitly specify your publish intent with the --publish CLI flag (e.g. --publish always, --publish onTag, --publish onTagOrDraft, --publish never) or set the publish option in your configuration. See v27 Breaking Changes → implicit --publish removed.
+
+Snap store
+snap target by default publishes to the Snap Store (the app store for Linux). To force publishing to another provider, explicitly specify publish configuration for snap.
+
+You can publish to multiple providers. For example, to publish Windows artifacts to both GitHub and Bitbucket (order is important — first item will be used as a default auto-update server, so in this example the app will use GitHub as the auto-update provider):
+
+{
+
+"build": {
+
+"win": {
+
+"publish": ["github", "bitbucket"]
+
+}
+
+}
+
+}
+
+win:
+
+publish:
+
+# an object provider for github with additional options
+
+- provider: github
+
+protocol: https
+
+# a string provider for bitbucket that will use default options
+
+- bitbucket
+
+You can also configure publishing using CLI arguments, for example, to force publishing snap not to Snap Store, but to GitHub: -c.snap.publish=github
+
+A custom publish provider can be used if needed.
+
+Macros
+In all publish options File Macros are supported.
+
+## How to Publish
+
+Excerpt from CLI Usage of electron-builder command:
+
+Publishing:
+
+--publish, -p [choices: "onTag", "onTagOrDraft", "always", "never"]
+
+CLI --publish option values:
+
+ValueDescriptiononTagon tag push onlyonTagOrDrafton tag push or if draft release existsalwaysalways publishnevernever publish
+
+But please consider using automatic rules instead of explicitly specifying publish:
+
+-
+If CI server detected, — onTagOrDraft.
+
+-
+If CI server reports that a tag was pushed, — onTag.
+
+A release will be drafted (if one doesn't already exist) and artifacts published only if a tag was pushed.
+
+-
+If npm script named release, — always.
+
+Add to scripts in the development package.json:
+
+"release": "electron-builder"
+
+and if you run yarn release, a release will be drafted (if doesn't already exist) and artifacts published.
+
+### Recommended GitHub Releases Workflow
+
+-
+Draft a new release. Set the "Tag version" to the value of version in your application package.json, and prefix it with v. "Release title" can be anything you want.
+
+For example, if your application package.json version is 1.0, your draft's "Tag version" would be v1.0.
+
+-
+Push some commits. Every CI build will update the artifacts attached to this draft.
+
+-
+Once you are done, publish the release. GitHub will tag the latest commit for you.
+
+The benefit of this workflow is that it allows you to always have the latest artifacts, and the release can be published once it is ready.
+
+### Continuous Deployment Workflow on Amazon S3 and other non-GitHub
+
+This example workflow is modeled on how releases are handled in Maven (it is an example of one of many possible workflows, you are not forced to follow it).
+
+- Setup your CI to publish on each commit. E.g. "dist": "electron-builder --publish always" in your package.json.
+
+- Set your version in your application package.json to 1.9.0-snapshot (or 1.9.0-master or whatever you want your development channel to be named). This will publish a file named snapshot.yml and a build named something-snapshot.exe (and corresponding for mac) to S3.
+
+- When you are ready to deploy, simply change your package version to 1.9.0 and push. This will then produce a latest.yml and something.exe on s3. Usually you'll git-tag this version as well (just to keep track of it).
+
+- Change the version back to a snapshot version right after, i.e. 1.10.0-snapshot, and commit it.
+
+## GitHub Repository
+
+Detected automatically using:
+
+- repository in the application or development package.json,
+
+- if not set, env
+
+- TRAVIS_REPO_SLUG
+
+- or APPVEYOR_REPO_NAME
+
+- or CIRCLE_PROJECT_USERNAME/CIRCLE_PROJECT_REPONAME,
+
+- if no env, from .git/config origin url.
+
+The detected repository ships inside your app
+Whatever is detected here becomes the publish/update destination and, for auto-update-capable targets, is written to app-update.yml inside every packaged build - that is where electron-updater looks for updates for the lifetime of that install. A build reports the repository it inferred, including the source it came from - at info level when it comes from the repository field of package.json (deliberate configuration), at warn level when it is picked up from CI environment variables or .git/config:• update feed inferred from repository info; it will be used as the publish/update destination
+
+(written to app-update.yml in auto-update-capable targets) - specify it explicitly to be sure
+
+it stays under your control reason=owner and repo not specified in the publish configuration
+
+source=.git/config provider=github owner=my-org repo=my-app
+
+Check that it is the repository you expect, and keep control of it. GitHub releases an owner or repository name for re-registration once it is renamed, transferred or deleted, so anyone who then claims that name can publish releases that already-installed copies of your app will download. Set owner and repo explicitly to avoid depending on detection at all:{
+
+"build": {
+
+"publish": {
+
+"provider": "github",
+
+"owner": "my-org",
+
+"repo": "my-app"
+
+}
+
+}
+
+}
+
+# Publishers
+
+## Bitbucket
+
+v27: authentication mode
+The Bitbucket publisher selects its auth scheme by whether a username is present:
+- With a username (bitbucket.username, or the BITBUCKET_USERNAME env var) → HTTP Basic auth. Use this for a Bitbucket app password or an Atlassian API token (the username is your Bitbucket username or Atlassian account email).
+
+- Without a username → the token is sent as Authorization: Bearer <token> (a repository / project / workspace access token). This is new in v27; previously a token was always sent as Basic auth with the repo owner as the username.
+
+If your CI sets BITBUCKET_TOKEN to an app password / API token without a username, set BITBUCKET_USERNAME too, or the request goes out as Bearer and fails authentication.
+
+# Interface: BitbucketOptions
+
+Bitbucket options.
+https://bitbucket.org/
+Define BITBUCKET_TOKEN environment variable.
+
+Bitbucket Cloud is retiring app passwords in favor of API tokens and access tokens. Authentication is selected by whether a username is provided:
+
+- With username — the token is sent via HTTP Basic auth. Use a Bitbucket username + app password, or an Atlassian account email + API token.
+
+- Without username — the token is sent as a repository/project/workspace access token via Bearer auth.
+
+For the auto-updater on a private repository, pass the matching header to autoUpdater.addAuthHeader(...):
+
+// access token (no username)
+
+autoUpdater.addAuthHeader(`Bearer ${token}`)
+
+// app password or API token (with username)
+
+autoUpdater.addAuthHeader(`Basic ${Buffer.from(`${username}:${token}`).toString("base64")}`)
+
+## Extends
+
+- PublishConfiguration
+
+## Properties
+
+### channel?
+
+readonly optional channel?: string | null
+
+The channel.
+
+#### Default
+
+latest
+
+### owner
+
+readonly owner: string
+
+Repository owner
+
+### provider
+
+readonly provider: "bitbucket"
+
+The provider. Must be bitbucket.
+
+#### Overrides
+
+PublishConfiguration.provider
+
+### publishAutoUpdate?
+
+readonly optional publishAutoUpdate?: boolean
+
+Whether to publish auto update info files.
+
+Auto update relies only on the first provider in the list (you can specify several publishers).
+Thus, probably, there`s no need to upload the metadata files for the other configured providers. But by default will be uploaded.
+
+#### Default
+
+true
+
+#### Inherited from
+
+PublishConfiguration.publishAutoUpdate
+
+### requestHeaders?
+
+readonly optional requestHeaders?: OutgoingHttpHeaders
+
+Any custom request headers
+
+#### Inherited from
+
+PublishConfiguration.requestHeaders
+
+### slug
+
+readonly slug: string
+
+Repository slug/name
+
+### timeout?
+
+readonly optional timeout?: number | null
+
+Request timeout in milliseconds. (Default is 2 minutes; O is ignored)
+
+#### Default
+
+120000
+
+#### Inherited from
+
+PublishConfiguration.timeout
+
+### token?
+
+readonly optional token?: string | null
+
+The token to support auto-update from private bitbucket repositories. Depending on username, this is a Bitbucket app password, an Atlassian API token, or a repository/project/workspace access token.
+
+### username?
+
+readonly optional username?: string | null
+
+The user name to support auto-update from private bitbucket repositories. Provide a Bitbucket username (for an app password) or an Atlassian account email (for an API token) to authenticate with HTTP Basic auth. Leave unset to send token as a Bearer access token.
+
+## Github
+
+v27: tagNamePrefix replaces vPrefixedTagName
+The GitHub vPrefixedTagName boolean was removed — use tagNamePrefix to control the tag prefix (defaults to "v"; set tagNamePrefix: "" for no prefix). electron-builder migrate-schema rewrites it. Note that v26 ignored an empty tagNamePrefix and still tagged v<version>; v27 honors it, so the migrator rewrites a v26 tagNamePrefix: "" to "v" (with a warning) to keep your existing tag names. (On GitLab, vPrefixedTagName is unchanged and still works.)
+
+# Interface: GithubOptions
+
+GitHub options.
+
+GitHub personal access token is required. You can generate by going to https://github.com/settings/tokens/new. The access token should have the repo scope/permission.
+Define GH_TOKEN environment variable.
+
+## Extends
+
+- PublishConfiguration
+
+## Properties
+
+### channel?
+
+readonly optional channel?: string | null
+
+The channel.
+
+#### Default
+
+latest
+
+### host?
+
+readonly optional host?: string | null
+
+The host (including the port if need).
+
+#### Default
+
+github.com
+
+### owner?
+
+readonly optional owner?: string | null
+
+The owner.
+
+### private?
+
+readonly optional private?: boolean | null
+
+Whether to use private github auto-update provider if GH_TOKEN environment variable is defined. See Private GitHub Update Repo.
+
+### protocol?
+
+readonly optional protocol?: "https" | "http" | null
+
+The protocol. GitHub Publisher supports only https.
+
+#### Default
+
+https
+
+### provider
+
+readonly provider: "github"
+
+The provider. Must be github.
+
+#### Overrides
+
+PublishConfiguration.provider
+
+### publishAutoUpdate?
+
+readonly optional publishAutoUpdate?: boolean
+
+Whether to publish auto update info files.
+
+Auto update relies only on the first provider in the list (you can specify several publishers).
+Thus, probably, there`s no need to upload the metadata files for the other configured providers. But by default will be uploaded.
+
+#### Default
+
+true
+
+#### Inherited from
+
+PublishConfiguration.publishAutoUpdate
+
+### releaseType?
+
+optional releaseType?: "draft" | "prerelease" | "release" | null
+
+The type of release. By default draft release will be created.
+
+Also you can set release type using environment variable. If EP_DRAFTis set to true — draft, if EP_PRE_RELEASEis set to true — prerelease.
+
+#### Default
+
+draft
+
+### repo?
+
+readonly optional repo?: string | null
+
+The repository name. Detected automatically.
+
+### requestHeaders?
+
+readonly optional requestHeaders?: OutgoingHttpHeaders
+
+Any custom request headers
+
+#### Inherited from
+
+PublishConfiguration.requestHeaders
+
+### tagNamePrefix?
+
+readonly optional tagNamePrefix?: string
+
+If defined, sets the prefix of the tag name that comes before the semver number.
+e.g. "v" in "v1.2.3" or "test" of "test1.2.3".
+
+#### Default
+
+"v"
+
+### timeout?
+
+readonly optional timeout?: number | null
+
+Request timeout in milliseconds. (Default is 2 minutes; O is ignored)
+
+#### Default
+
+120000
+
+#### Inherited from
+
+PublishConfiguration.timeout
+
+### token?
+
+readonly optional token?: string | null
+
+The access token to support auto-update from private github repositories. Never specify it in the configuration files. Only for setFeedURL.
+
+## GitLab
+
+# Interface: GitlabOptions
+
+GitLab options.
+
+GitLab personal access token is required for private repositories. You can generate one by going to your GitLab profile settings.
+Define GITLAB_TOKEN environment variable.
+
+## Extends
+
+- PublishConfiguration
+
+## Properties
+
+### channel?
+
+readonly optional channel?: string | null
+
+The channel.
+
+#### Default
+
+latest
+
+### host?
+
+readonly optional host?: string | null
+
+The GitLab host (including the port if need).
+
+#### Default
+
+gitlab.com
+
+### projectId?
+
+readonly optional projectId?: string | number | null
+
+The GitLab project ID or path (e.g., "12345678" or "namespace/project").
+
+### provider
+
+readonly provider: "gitlab"
+
+The provider. Must be gitlab.
+
+#### Overrides
+
+PublishConfiguration.provider
+
+### publishAutoUpdate?
+
+readonly optional publishAutoUpdate?: boolean
+
+Whether to publish auto update info files.
+
+Auto update relies only on the first provider in the list (you can specify several publishers).
+Thus, probably, there`s no need to upload the metadata files for the other configured providers. But by default will be uploaded.
+
+#### Default
+
+true
+
+#### Inherited from
+
+PublishConfiguration.publishAutoUpdate
+
+### requestHeaders?
+
+readonly optional requestHeaders?: OutgoingHttpHeaders
+
+Any custom request headers
+
+#### Inherited from
+
+PublishConfiguration.requestHeaders
+
+### timeout?
+
+readonly optional timeout?: number | null
+
+Request timeout in milliseconds. (Default is 2 minutes; O is ignored)
+
+#### Default
+
+120000
+
+#### Inherited from
+
+PublishConfiguration.timeout
+
+### token?
+
+readonly optional token?: string | null
+
+The access token to support auto-update from private GitLab repositories. Never specify it in the configuration files.
+
+### uploadTarget?
+
+readonly optional uploadTarget?: "project_upload" | "generic_package" | null
+
+Upload target method. Can be "project_upload" for GitLab project uploads or "generic_package" for GitLab generic packages.
+
+#### Default
+
+"project_upload"
+
+### vPrefixedTagName?
+
+readonly optional vPrefixedTagName?: boolean
+
+Whether to use v-prefixed tag name.
+
+#### Default
+
+true
+
+## Keygen
+
+# Interface: KeygenOptions
+
+Keygen options.
+https://keygen.sh/
+Define KEYGEN_TOKEN environment variable.
+
+## Extends
+
+- PublishConfiguration
+
+## Properties
+
+### account
+
+readonly account: string
+
+Keygen account's UUID
+
+### channel?
+
+readonly optional channel?: "stable" | "rc" | "beta" | "alpha" | "dev" | null
+
+The channel.
+
+#### Default
+
+stable
+
+### host?
+
+readonly optional host?: string
+
+Keygen host for self-hosted instances
+
+#### Default
+
+"api.keygen.sh"
+
+### platform?
+
+readonly optional platform?: string | null
+
+The target Platform. Is set programmatically explicitly during publishing.
+
+### product
+
+readonly product: string
+
+Keygen product's UUID
+
+### provider
+
+readonly provider: "keygen"
+
+The provider. Must be keygen.
+
+#### Overrides
+
+PublishConfiguration.provider
+
+### publishAutoUpdate?
+
+readonly optional publishAutoUpdate?: boolean
+
+Whether to publish auto update info files.
+
+Auto update relies only on the first provider in the list (you can specify several publishers).
+Thus, probably, there`s no need to upload the metadata files for the other configured providers. But by default will be uploaded.
+
+#### Default
+
+true
+
+#### Inherited from
+
+PublishConfiguration.publishAutoUpdate
+
+### requestHeaders?
+
+readonly optional requestHeaders?: OutgoingHttpHeaders
+
+Any custom request headers
+
+#### Inherited from
+
+PublishConfiguration.requestHeaders
+
+### timeout?
+
+readonly optional timeout?: number | null
+
+Request timeout in milliseconds. (Default is 2 minutes; O is ignored)
+
+#### Default
+
+120000
+
+#### Inherited from
+
+PublishConfiguration.timeout
+
+## S3
+
+# Interface: S3Options
+
+Amazon S3 options.
+AWS credentials are required, please see getting your credentials.
+To set credentials define AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables directly,
+or use ~/.aws/credentials file,
+or use ~/.aws/config file. For the last method to work you will also need to define AWS_SDK_LOAD_CONFIG=1 environment variable.
+
+Example configuration:
+
+{
+
+"build":
+
+"publish": {
+
+"provider": "s3",
+
+"bucket": "bucket-name"
+
+}
+
+}
+
+}
+
+## Extends
+
+- BaseS3Options
+
+## Properties
+
+### accelerate?
+
+readonly optional accelerate?: boolean
+
+If set to true, this will enable the s3 accelerated endpoint
+These endpoints have a particular format of:
+${bucketname}.s3-accelerate.amazonaws.com
+
+### acl?
+
+readonly optional acl?: "private" | "public-read" | null
+
+The ACL. Set to null to not add.
+
+Please see required permissions for the S3 provider.
+
+#### Default
+
+public-read
+
+#### Overrides
+
+BaseS3Options.acl
+
+### bucket
+
+readonly bucket: string
+
+The bucket name.
+
+### channel?
+
+optional channel?: string | null
+
+The update channel.
+
+#### Default
+
+latest
+
+#### Inherited from
+
+BaseS3Options.channel
+
+### encryption?
+
+readonly optional encryption?: "AES256" | "aws:kms" | null
+
+Server-side encryption algorithm to use for the object.
+
+### endpoint?
+
+readonly optional endpoint?: string | null
+
+The endpoint URI to send requests to. The default endpoint is built from the configured region.
+The endpoint should be a string like https://{service}.{region}.amazonaws.com.
+
+### forcePathStyle?
+
+readonly optional forcePathStyle?: boolean
+
+When true, force a path-style endpoint to be used where the bucket name is part of the path.
+Path-style Access
+
+### path?
+
+readonly optional path?: string | null
+
+The directory path.
+
+#### Default
+
+/
+
+#### Inherited from
+
+BaseS3Options.path
+
+### provider
+
+readonly provider: "s3"
+
+The provider. Must be s3.
+
+#### Overrides
+
+BaseS3Options.provider
+
+### publishAutoUpdate?
+
+readonly optional publishAutoUpdate?: boolean
+
+Whether to publish auto update info files.
+
+Auto update relies only on the first provider in the list (you can specify several publishers).
+Thus, probably, there`s no need to upload the metadata files for the other configured providers. But by default will be uploaded.
+
+#### Default
+
+true
+
+#### Inherited from
+
+BaseS3Options.publishAutoUpdate
+
+### region?
+
+optional region?: string | null
+
+The region. Is determined and set automatically when publishing.
+
+### requestHeaders?
+
+readonly optional requestHeaders?: OutgoingHttpHeaders
+
+Any custom request headers
+
+#### Inherited from
+
+BaseS3Options.requestHeaders
+
+### storageClass?
+
+readonly optional storageClass?: "STANDARD" | "REDUCED_REDUNDANCY" | "STANDARD_IA" | null
+
+The type of storage to use for the object.
+
+#### Default
+
+STANDARD
+
+### timeout?
+
+readonly optional timeout?: number | null
+
+Request timeout in milliseconds. (Default is 2 minutes; O is ignored)
+
+#### Default
+
+120000
+
+#### Inherited from
+
+BaseS3Options.timeout
+
+## Snap Store
+
+# Interface: SnapStoreOptions
+
+Snap Store options. To publish directly to Snapcraft, see Snapcraft authentication options for local or CI/CD authentication options.
+
+## Extends
+
+- PublishConfiguration
+
+## Properties
+
+### channels?
+
+readonly optional channels?: string | string[] | null
+
+The list of channels the snap would be released.
+
+#### Default
+
+["edge"]
+
+### provider
+
+readonly provider: "snapStore"
+
+The provider. Must be snapStore.
+
+#### Overrides
+
+PublishConfiguration.provider
+
+### publishAutoUpdate?
+
+readonly optional publishAutoUpdate?: boolean
+
+Whether to publish auto update info files.
+
+Auto update relies only on the first provider in the list (you can specify several publishers).
+Thus, probably, there`s no need to upload the metadata files for the other configured providers. But by default will be uploaded.
+
+#### Default
+
+true
+
+#### Inherited from
+
+PublishConfiguration.publishAutoUpdate
+
+### repo?
+
+readonly optional repo?: string
+
+snapcraft repo name
+
+### requestHeaders?
+
+readonly optional requestHeaders?: OutgoingHttpHeaders
+
+Any custom request headers
+
+#### Inherited from
+
+PublishConfiguration.requestHeaders
+
+### timeout?
+
+readonly optional timeout?: number | null
+
+Request timeout in milliseconds. (Default is 2 minutes; O is ignored)
+
+#### Default
+
+120000
+
+#### Inherited from
+
+PublishConfiguration.timeout
+
+## Spaces
+
+# Interface: SpacesOptions
+
+DigitalOcean Spaces options.
+Access key is required, define DO_KEY_ID and DO_SECRET_KEY environment variables.
+
+## Extends
+
+- BaseS3Options
+
+## Properties
+
+### acl?
+
+readonly optional acl?: "private" | "public-read" | null
+
+The ACL. Set to null to not add.
+
+#### Default
+
+public-read
+
+#### Inherited from
+
+BaseS3Options.acl
+
+### channel?
+
+optional channel?: string | null
+
+The update channel.
+
+#### Default
+
+latest
+
+#### Inherited from
+
+BaseS3Options.channel
+
+### name
+
+readonly name: string
+
+The space name.
+
+### path?
+
+readonly optional path?: string | null
+
+The directory path.
+
+#### Default
+
+/
+
+#### Inherited from
+
+BaseS3Options.path
+
+### provider
+
+readonly provider: "spaces"
+
+The provider. Must be spaces.
+
+#### Overrides
+
+BaseS3Options.provider
+
+### publishAutoUpdate?
+
+readonly optional publishAutoUpdate?: boolean
+
+Whether to publish auto update info files.
+
+Auto update relies only on the first provider in the list (you can specify several publishers).
+Thus, probably, there`s no need to upload the metadata files for the other configured providers. But by default will be uploaded.
+
+#### Default
+
+true
+
+#### Inherited from
+
+BaseS3Options.publishAutoUpdate
+
+### region
+
+readonly region: string
+
+The region (e.g. nyc3).
+
+### requestHeaders?
+
+readonly optional requestHeaders?: OutgoingHttpHeaders
+
+Any custom request headers
+
+#### Inherited from
+
+BaseS3Options.requestHeaders
+
+### timeout?
+
+readonly optional timeout?: number | null
+
+Request timeout in milliseconds. (Default is 2 minutes; O is ignored)
+
+#### Default
+
+120000
+
+#### Inherited from
+
+BaseS3Options.timeout
+
+## R2
+
+To publish to Cloudflare R2:
+
+- Create an R2 API token with at least Object Read & Write permission on your bucket.
+
+- Expose its credentials to electron-builder via the CF_R2_ACCESS_KEY_ID and CF_R2_SECRET_ACCESS_KEY environment variables.
+
+- Enable public access for the bucket via an r2.dev subdomain or a custom domain — R2's S3 API endpoint cannot serve unauthenticated downloads, so electron-updater cannot download updates from it.
+
+- Set publicUrl to that public base URL.
+
+Auto-updating from R2 requires an electron-updater version that supports the r2 provider: electron-updater >= 7.0.0 (the release line containing this feature).
+
+Note: files are uploaded with a single PUT request, and R2 limits single-PUT uploads to ~5 GiB per object.
+
+# Interface: R2Options
+
+Cloudflare R2 options.
+Credentials are required; define CF_R2_ACCESS_KEY_ID and CF_R2_SECRET_ACCESS_KEY environment variables
+with an R2 API token (see https://developers.cloudflare.com/r2/api/s3/tokens/).
+
+Public access for auto-updates: R2 buckets are private by default. The S3-compatible API endpoint
+always requires authentication, so electron-updater cannot download updates directly from it.
+You must either enable a custom domain or an r2.dev subdomain for the bucket in the Cloudflare
+dashboard (see https://developers.cloudflare.com/r2/buckets/public-buckets/) and then set
+publicUrl to that base URL so the updater knows where to fetch update metadata and binaries.
+
+ACLs: R2 does not support S3 ACLs. The acl option from BaseS3Options is intentionally
+excluded here. Configure public bucket access in the Cloudflare dashboard instead.
+
+Example configuration:
+
+{
+
+"build": {
+
+"publish": {
+
+"provider": "r2",
+
+"bucket": "my-releases",
+
+"accountId": "abcdef1234567890abcdef1234567890",
+
+"publicUrl": "https://pub-abcdef1234567890abcdef1234567890.r2.dev"
+
+}
+
+}
+
+}
+
+## Extends
+
+- BaseS3Options
+
+## Properties
+
+### accountId
+
+readonly accountId: string
+
+Your Cloudflare account ID (32-character hex string). Found on the R2 overview page
+in the Cloudflare dashboard. Used to construct the S3-compatible upload endpoint:
+https://<accountId>.r2.cloudflarestorage.com
+
+### acl?
+
+readonly optional acl?: undefined
+
+R2 does not support S3 ACLs. This option is not applicable and will be ignored.
+Configure bucket-level public access in the Cloudflare dashboard instead.
+
+#### Overrides
+
+BaseS3Options.acl
+
+### bucket
+
+readonly bucket: string
+
+The R2 bucket name.
+
+### channel?
+
+optional channel?: string | null
+
+The update channel.
+
+#### Default
+
+latest
+
+#### Inherited from
+
+BaseS3Options.channel
+
+### jurisdiction?
+
+readonly optional jurisdiction?: "eu" | "fedramp" | null
+
+The jurisdiction of the R2 bucket, if the bucket was created with a jurisdictional
+restriction. Buckets created in a jurisdiction live on a separate endpoint —
+https://<accountId>.<jurisdiction>.r2.cloudflarestorage.com — so this must match
+the jurisdiction the bucket was created with. Omit for regular buckets.
+
+See https://developers.cloudflare.com/r2/reference/data-location/#jurisdictional-restrictions
+
+### path?
+
+readonly optional path?: string | null
+
+The directory path.
+
+#### Default
+
+/
+
+#### Inherited from
+
+BaseS3Options.path
+
+### provider
+
+readonly provider: "r2"
+
+The provider. Must be r2.
+
+#### Overrides
+
+BaseS3Options.provider
+
+### publicUrl?
+
+readonly optional publicUrl?: string | null
+
+The public base URL from which electron-updater will download update metadata and
+binaries. This must be the URL of your bucket's custom domain or r2.dev subdomain
+(e.g. https://pub-xxx.r2.dev or https://cdn.example.com).
+
+Required when publishAutoUpdate is not false. The R2 S3 API endpoint requires
+authentication and cannot serve unauthenticated download requests.
+
+See https://developers.cloudflare.com/r2/buckets/public-buckets/
+
+### publishAutoUpdate?
+
+readonly optional publishAutoUpdate?: boolean
+
+Whether to publish auto update info files.
+
+Auto update relies only on the first provider in the list (you can specify several publishers).
+Thus, probably, there`s no need to upload the metadata files for the other configured providers. But by default will be uploaded.
+
+#### Default
+
+true
+
+#### Inherited from
+
+BaseS3Options.publishAutoUpdate
+
+### requestHeaders?
+
+readonly optional requestHeaders?: OutgoingHttpHeaders
+
+Any custom request headers
+
+#### Inherited from
+
+BaseS3Options.requestHeaders
+
+### timeout?
+
+readonly optional timeout?: number | null
+
+Request timeout in milliseconds. (Default is 2 minutes; O is ignored)
+
+#### Default
+
+120000
+
+#### Inherited from
+
+BaseS3Options.timeout
+
+## BYO Generic (create-your-own)
+
+(And maybe submit it upstream in a PR!)
+{!./builder-util-runtime.Interface.GenericServerOptions.md!}
+
+- How to Publish- Recommended GitHub Releases Workflow- Continuous Deployment Workflow on Amazon S3 and other non-GitHub
+- GitHub Repository- Bitbucket- Extends- Properties- channel?- owner- provider- publishAutoUpdate?- requestHeaders?- slug- timeout?- token?- username?
+- Github- Extends- Properties- channel?- host?- owner?- private?- protocol?- provider- publishAutoUpdate?- releaseType?- repo?- requestHeaders?- tagNamePrefix?- timeout?- token?
+- GitLab- Extends- Properties- channel?- host?- projectId?- provider- publishAutoUpdate?- requestHeaders?- timeout?- token?- uploadTarget?- vPrefixedTagName?
+- Keygen- Extends- Properties- account- channel?- host?- platform?- product- provider- publishAutoUpdate?- requestHeaders?- timeout?
+- S3- Extends- Properties- accelerate?- acl?- bucket- channel?- encryption?- endpoint?- forcePathStyle?- path?- provider- publishAutoUpdate?- region?- requestHeaders?- storageClass?- timeout?
+- Snap Store- Extends- Properties- channels?- provider- publishAutoUpdate?- repo?- requestHeaders?- timeout?
+- Spaces- Extends- Properties- acl?- channel?- name- path?- provider- publishAutoUpdate?- region- requestHeaders?- timeout?
+- R2- Extends- Properties- accountId- acl?- bucket- channel?- jurisdiction?- path?- provider- publicUrl?- publishAutoUpdate?- requestHeaders?- timeout?
+- BYO Generic (create-your-own)

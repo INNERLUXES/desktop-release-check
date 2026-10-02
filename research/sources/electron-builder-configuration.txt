@@ -1,0 +1,1376 @@
+Source: https://www.electron.build/docs/configuration
+Text taken from the saved page; markup is flattened.
+
+On this page
+Upgrading from v26?
+Many configuration keys were renamed or restructured in v27 (e.g. mac.sign, win.sign, electronGet, asar, nativeModules, snapcraft). Run electron-builder migrate-schema to rewrite your config automatically, then skim What's New in v27 and the full v27 Breaking Changes.
+
+electron-builder configuration can be defined
+
+-
+in the package.json file of your project using the build key on the top level:
+
+"build": {
+
+"appId": "com.example.app"
+
+}
+
+-
+or through the --config <path/to/yml-or-json5-or-toml-or-js> option. Defaults to electron-builder.yml.
+
+appId: "com.example.app"
+
+json, json5, toml or js/ts (exported configuration or function that produces configuration) formats are also supported.
+
+tip
+If you want to use a js file, do not name it electron-builder.js. It will conflict with the electron-builder package name.
+
+tip
+If you want to use toml, install it with npm install toml --save-dev.
+
+Most of the options accept null — for example, to explicitly set that DMG icon must be default volume icon from the OS and default rules must be not applied (i.e. use application icon as DMG icon), set dmg.icon to null.
+
+## Artifact File Name Template
+
+${ext} macro is supported in addition to file macros.
+
+## Environment Variables from File
+
+Env file electron-builder.env in the current dir (example). Supported only for CLI usage.
+
+## How to Read Docs
+
+- Name of optional property is normal, required is bold.
+
+- Type is specified after property name: Array<String> | String. Union like this means that you can specify or string (**/*), or array of strings (["**/*", "!foo.js"]).
+
+### Common Configuration
+
+# Interface: CommonConfiguration
+
+Configuration options shared across all platforms.
+
+These properties apply regardless of the target platform and control general build behaviour such
+as the application identity, output paths, native dependency rebuilding, toolset versions, and
+platform-specific target sub-configurations.
+
+## Extended by
+
+- Configuration
+
+- Configuration
+
+## Properties
+
+### allowMissingDependencies?
+
+readonly optional allowMissingDependencies?: boolean | string[] | null
+
+Whether production dependencies that cannot be resolved during node-module collection are
+allowed — i.e. whether the build should continue with a warning instead of failing.
+
+During collection every production dependency must resolve to an installed package on disk. A
+dependency that does not resolve (cannot find path for dependency / dependency not found on disk) is not bundled, which typically breaks the packaged app at runtime with
+MODULE_NOT_FOUND.
+
+- false or null (default): the build fails after dependency collection completes,
+reporting the complete list of missing production dependencies at once.
+
+- string[]: the listed dependency names are allowed to be missing; any other missing
+production dependency still fails the build. Entries match the package name of the reported
+name@version entry (e.g. some-native-module, @scope/pkg), or an exact name@version
+string to allow only that resolved version to be missing.
+
+- true: missing production dependencies are only logged as warnings (the electron-builder
+≤ 26 behavior).
+
+Missing optional dependencies (declared in optionalDependencies, e.g. fsevents on
+Linux/Windows, or platform-specific packages) are always allowed and never fail the build.
+
+Independent of ignoredProductionDependencies, which controls which dependencies are
+excluded from the copied node_modules; this option only controls validation of the
+collection result.
+
+#### Default
+
+false
+
+### apk?
+
+readonly optional apk?: LinuxTargetSpecificOptions | null
+
+Alpine Linux APK package options.
+
+Produces an .apk archive installable via apk add --allow-untrusted ./package.apk.
+
+### appId?
+
+readonly optional appId?: string | null
+
+The application identifier.
+
+Used as CFBundleIdentifier
+on macOS and as the
+Application User Model ID
+on Windows (NSIS target only; Squirrel.Windows does not support custom Application User Model IDs).
+
+It is strongly recommended to set an explicit, reverse-DNS-style identifier (e.g. "com.example.myapp")
+rather than relying on the generated default.
+
+#### Default
+
+com.electron.${name}
+
+### appImage?
+
+readonly optional appImage?: AppImageOptions | null
+
+AppImage options.
+
+AppImage is a portable application format that bundles the app and its runtime dependencies
+into a single self-contained executable that runs on most Linux distributions without
+installation. The produced .AppImage file is executable after chmod +x.
+
+#### See
+
+AppImageOptions
+
+### appx?
+
+readonly optional appx?: AppXOptions | null
+
+Windows Store (MSIX/AppX) package options.
+
+Produces a .appx or .msix package suitable for distribution through the Microsoft Store or
+side-loading.
+
+#### See
+
+AppXOptions
+
+### buildNumber?
+
+readonly optional buildNumber?: string | null
+
+The build number.
+
+Maps to the --iteration flag for FPM-based Linux targets and is appended to the version
+string in CFBundleVersion (macOS) and FileVersion (Windows) when buildVersion is
+not set explicitly.
+
+If not set, falls back to the first defined environment variable among:
+BUILD_NUMBER, TRAVIS_BUILD_NUMBER, APPVEYOR_BUILD_NUMBER, CIRCLE_BUILD_NUM,
+BUILD_BUILDNUMBER, CI_PIPELINE_IID.
+
+### buildVersion?
+
+readonly optional buildVersion?: string | null
+
+The full build version string.
+
+Maps to CFBundleVersion on macOS and the FileVersion metadata field on Windows.
+Defaults to the version field from package.json.
+
+If buildVersion is not set but buildNumber is defined (or resolved from an
+environment variable), the effective build version becomes ${version}.${buildNumber}.
+
+### concurrency?
+
+readonly optional concurrency?: Concurrency | null
+
+Configuration for experimental concurrent (multi-platform / multi-arch) builds.
+
+When jobs > 1, electron-builder runs up to jobs platform builds in parallel. This is an
+experimental feature — use with caution and verify that your hook functions and build resources
+are safe to execute concurrently.
+
+#### See
+
+Concurrency
+
+### copyright?
+
+readonly optional copyright?: string | null
+
+The copyright string embedded in the built artifacts.
+
+Appears in the Windows LegalCopyright version-info field and the macOS NSHumanReadableCopyright
+Info.plist key.
+
+#### Default
+
+Copyright © ${year} ${author}
+
+### deb?
+
+readonly optional deb?: DebOptions | null
+
+Debian package options.
+
+Targets Debian, Ubuntu, and Debian-based distributions. Produces a .deb archive
+installable via dpkg -i or apt install ./package.deb.
+
+#### See
+
+DebOptions
+
+### directories?
+
+readonly optional directories?: MetadataDirectories | null
+
+Overrides for input/output directory paths used during the build.
+
+#### See
+
+MetadataDirectories
+
+### dmg?
+
+readonly optional dmg?: DmgOptions | null
+
+macOS DMG disk image options (background image, window position, icon layout, licence, etc.).
+
+#### See
+
+DmgOptions
+
+### downloadAlternateFFmpeg?
+
+readonly optional downloadAlternateFFmpeg?: boolean
+
+Whether to download the FFmpeg library variant from Electron's release assets and replace the
+default (proprietary codec) FFmpeg library before signing.
+
+The alternate FFmpeg is compiled without proprietary codec support (H.264, AAC, etc.) and is
+required for distributing on certain platforms (e.g., Linux distributions that prohibit
+proprietary codecs). Enabling this swaps the bundled ffmpeg dynamic library before the app
+is signed.
+
+### electronFuses?
+
+readonly optional electronFuses?: FuseOptionsV1 | null
+
+Options forwarded to @electron/fuses to flip Electron
+feature flags in the binary.
+
+Fuses are compile-time-like flags baked into the Electron binary that cannot be changed at
+runtime. Flipping them is the approved mechanism for hardening Electron apps (e.g., disabling
+ELECTRON_RUN_AS_NODE, enabling ASAR integrity, etc.).
+
+electron-builder flips fuses after packaging but before signing so that the final signature
+covers the modified binary.
+
+#### See
+
+FuseOptionsV1
+
+### extraMetadata?
+
+readonly optional extraMetadata?: any
+
+Additional properties to deep-merge into the app's package.json at build time.
+
+Useful for injecting build-time metadata (e.g., a git commit hash or CI build URL) that
+should be readable at runtime via require('./package.json') or import.meta.url.
+
+#### Example
+
+{ "extraMetadata": { "commitHash": "abc1234", "buildDate": "2025-01-01" } }
+
+### flatpak?
+
+readonly optional flatpak?: FlatpakOptions | null
+
+Flatpak options.
+
+Flatpak is a sandboxed application distribution format for Linux distributed via
+Flathub or self-hosted OSTree repositories.
+
+#### See
+
+FlatpakOptions
+
+### forceCodeSigning?
+
+readonly optional forceCodeSigning?: boolean
+
+Whether to throw an error and abort the build if the app could not be code-signed.
+
+Set to true in release pipelines to catch missing or misconfigured signing credentials
+before producing unsigned artifacts. When false (the default), missing signing credentials
+produce a warning and the build continues unsigned.
+
+#### Default
+
+false
+
+### freebsd?
+
+readonly optional freebsd?: LinuxTargetSpecificOptions | null
+
+FreeBSD pkg package options.
+
+Produces a .pkg archive for the FreeBSD package manager.
+
+### ignoredProductionDependencies?
+
+readonly optional ignoredProductionDependencies?: string[] | null
+
+Names of production dependencies that are excluded from the copied node_modules, even if they
+are declared in the dependencies section of package.json.
+
+electron-builder copies the resolved production dependency tree into the app. Some packages —
+notably electron — are already provided another way (the Electron runtime is embedded
+separately), so copying them would just duplicate what is already there. Such packages are
+excluded from the copy rather than rejected: they remain valid production dependencies for
+tooling purposes (e.g. SBOM, license, and vulnerability tracking) without being shipped twice.
+
+Only dependencies declared by the app itself are eligible: a listed name and the transitive
+dependencies required only by it are dropped, while anything also required by another (kept)
+production dependency stays bundled. A matching name that appears solely as a transitive
+dependency of a kept package is never excluded. Note that a kept package which require()s an
+excluded name at runtime without declaring it (relying on hoisting) will fail with
+MODULE_NOT_FOUND — declare such a dependency properly or remove the name from this list.
+
+Matching is by the dependency name as declared in package.json: an npm alias
+("custom-electron": "npm:electron@^30.0.0") is matched by its alias key (custom-electron),
+never by the underlying package name.
+
+Overriding this option replaces the default list, so include electron and electron-builder
+unless you intend to ship them. The most common reason to override is to add a dependency that a
+bundler (Vite, webpack, esbuild, …) already inlines into your app code: keep it in dependencies
+so SBOM/license tooling still sees it, and list it here so a duplicate copy is not packaged — e.g.
+["electron", "electron-builder", "react", "react-dom"]. Removing a default name keeps that
+package in the copied node_modules. Setting the option to null (or omitting it) applies the
+default list; to disable exclusion entirely, set it to an empty array []. Each excluded package
+is logged once during packaging.
+
+#### Default
+
+["electron", "electron-builder"]
+
+### includePdb?
+
+readonly optional includePdb?: boolean
+
+Whether to include .pdb (Program Database) symbol files in the output.
+
+PDB files enable Windows crash-dump analysis but significantly increase artifact size. Enable
+for internal builds where you want symbol information; disable for public distribution.
+
+#### Default
+
+false
+
+### linux?
+
+readonly optional linux?: LinuxConfiguration | null
+
+General Linux build options shared across all Linux targets (icon, category, desktop entry,
+executable name, etc.). Target-specific compression and packaging options live in the
+per-format interfaces (DebOptions, RpmOptions, PacmanOptions, etc.).
+
+#### See
+
+LinuxConfiguration
+
+### mac?
+
+readonly optional mac?: MacConfiguration | null
+
+macOS-specific build options (signing, entitlements, notarization, target categories, etc.).
+
+#### See
+
+MacConfiguration
+
+### mas?
+
+readonly optional mas?: MasConfiguration | null
+
+macOS App Store (MAS) submission options.
+
+#### See
+
+MasConfiguration
+
+### masDev?
+
+readonly optional masDev?: MasConfiguration | null
+
+macOS App Store development-signing options (mas-dev target).
+Used for local testing of MAS builds without submitting to the store.
+
+#### See
+
+MasConfiguration
+
+### msi?
+
+readonly optional msi?: MsiOptions | null
+
+WiX-based MSI installer options.
+
+Produces a traditional .msi package built with the WiX Toolset. Best for enterprise
+deployments that require MSI-based installation policies.
+
+#### See
+
+MsiOptions
+
+### msiWrapped?
+
+readonly optional msiWrapped?: MsiWrappedOptions | null
+
+MSI-wrapped NSIS installer options.
+
+Wraps the standard NSIS installer inside an MSI package so that it can be deployed via
+Group Policy or other MSI-only channels while preserving the NSIS installer UX.
+
+#### See
+
+MsiWrappedOptions
+
+### msix?
+
+readonly optional msix?: MsixOptions | null
+
+MSIX package options. MSIX is the modern successor to AppX with additional deployment features.
+
+### nativeModules?
+
+readonly optional nativeModules?: NativeModulesConfig | null
+
+Configuration for native Node.js module installation and rebuilding.
+
+Groups all options that control how electron-builder handles native modules — from forcing
+source builds during install through to the @electron/rebuild compilation mode.
+
+#### See
+
+NativeModulesConfig
+
+### npmArgs?
+
+readonly optional npmArgs?: string | string[] | null
+
+Additional command-line arguments appended to the package manager's install command when
+electron-builder installs app dependencies (i.e., when node_modules is missing and a fresh
+install is required).
+
+These arguments are appended only during the install phase, not during the rebuild phase.
+To influence @electron/rebuild directly, see NativeModulesConfig.rebuildMode.
+
+#### Example
+
+{ "npmArgs": ["--prefer-offline", "--ignore-scripts"] }
+
+### nsis?
+
+readonly optional nsis?: NsisOptions | null
+
+NSIS one-click installer options.
+
+NSIS (Nullsoft Scriptable Install System) is the default Windows installer format produced by
+electron-builder. It generates a lightweight, self-extracting .exe installer.
+
+#### See
+
+NsisOptions
+
+### nsisWeb?
+
+readonly optional nsisWeb?: NsisWebOptions | null
+
+NSIS web installer options.
+
+Like the standard NSIS installer but the app payload is downloaded from a remote URL at install
+time rather than bundled into the .exe. Useful for very large apps or staged rollouts.
+
+#### See
+
+NsisWebOptions
+
+### p5p?
+
+readonly optional p5p?: LinuxTargetSpecificOptions | null
+
+Solaris IPS package options.
+
+Produces a .p5p archive for the Solaris Image Packaging System (pkg).
+
+### pacman?
+
+readonly optional pacman?: PacmanOptions | null
+
+Pacman package options.
+
+Targets Arch Linux and Arch-based distributions (Manjaro, EndeavourOS, etc.).
+Produces a .pacman archive installable via pacman -U ./package.pacman.
+
+#### See
+
+PacmanOptions
+
+### pkg?
+
+readonly optional pkg?: PkgOptions | null
+
+macOS PKG flat-package installer options.
+
+#### See
+
+PkgOptions
+
+### portable?
+
+readonly optional portable?: PortableOptions | null
+
+Portable executable options.
+
+Produces a single .exe that requires no installation — it extracts and runs directly.
+
+#### See
+
+PortableOptions
+
+### productName?
+
+readonly optional productName?: string | null
+
+The human-readable product name displayed in installers, the macOS dock, and the Windows
+Apps & Features list.
+
+Unlike the name field in package.json, this value may contain spaces and other characters
+that are not allowed in npm package names.
+
+Resolution order:
+
+- productName inside the build configuration block.
+
+- productName at the top level of package.json.
+
+- name at the top level of package.json.
+
+### removePackageKeywords?
+
+readonly optional removePackageKeywords?: boolean
+
+Whether to remove the keywords field from bundled package.json files.
+
+The keywords array is only meaningful for package registry discoverability and has no
+runtime value inside a packaged Electron app. Removing it marginally reduces artifact size.
+
+#### Default
+
+true
+
+### removePackageScripts?
+
+readonly optional removePackageScripts?: boolean
+
+Whether to remove the scripts field from bundled package.json files.
+
+Lifecycle scripts (preinstall, postinstall, etc.) have no meaning inside a packaged
+Electron app and can trigger unintended behaviour if any tooling inspects the bundled
+package.json. Removing them reduces artifact size and prevents accidental execution.
+
+#### Default
+
+true
+
+### rpm?
+
+readonly optional rpm?: RpmOptions | null
+
+RPM package options.
+
+Targets Fedora, Red Hat Enterprise Linux, SUSE, and RPM-based distributions.
+Produces a .rpm archive installable via rpm -i or dnf install ./package.rpm.
+
+#### See
+
+RpmOptions
+
+### snapcraft?
+
+readonly optional snapcraft?: SnapcraftOptions | null
+
+Snapcraft configuration.
+
+Selects the snapcraft base and provides per-core options:
+
+- base: "core18" | "core20" | "core22" — legacy bases; still functional but not recommended
+for new apps.
+
+- base: "core24" — modern base with the GNOME extension (recommended, requires Electron 25+).
+
+- base: "custom" — pass an existing snapcraft.yaml through unchanged; no plugs, extensions,
+or desktop files are injected.
+
+#### Example
+
+{ "snapcraft": { "base": "core24", "core24": { "useLXD": true } } }
+
+#### See
+
+SnapcraftOptions
+
+### squirrelWindows?
+
+readonly optional squirrelWindows?: SquirrelWindowsOptions | null
+
+Squirrel.Windows auto-update installer options.
+
+Requires the electron-builder-squirrel-windows optional dependency.
+
+#### See
+
+SquirrelWindowsOptions
+
+### toolsets?
+
+readonly optional toolsets?: ToolsetConfig | null
+
+Pinned versions of the binary toolsets electron-builder downloads and uses internally.
+
+Each property selects a specific release of the corresponding tool bundle. Set a property to
+"0.0.0" to force the legacy bundle (pre-v27 behaviour). Leave a property unset (or set it to
+"latest") to use the modern default (newest bundle) for that toolset.
+
+Note: Toolset versioning can drop intermediate releases (such as if a problem is discovered in a bundle). If you need to pin to a specific release, check the release notes for the toolset to ensure the version you specify is valid.
+
+#### See
+
+ToolsetConfig
+
+### win?
+
+readonly optional win?: WindowsConfiguration | null
+
+Windows-specific build options (signing, NSIS, icon, file associations, etc.).
+
+#### See
+
+WindowsConfiguration
+
+## Overridable per Platform Options
+
+Following options can be set also per platform (top-level keys mac, linux and win) if need.
+
+## Base Configuration
+
+# Interface: PlatformSpecificBuildOptions
+
+## Extends
+
+- TargetSpecificOptions.FilesBuildOptions
+
+## Extended by
+
+- Configuration
+
+- LinuxConfiguration
+
+- MacConfiguration
+
+- WindowsConfiguration
+
+## Properties
+
+### appId?
+
+readonly optional appId?: string | null
+
+The application id. Used as CFBundleIdentifier for MacOS and as
+Application User Model ID for Windows (NSIS target only, Squirrel.Windows not supported). It is strongly recommended that an explicit ID is set.
+
+#### Default
+
+com.electron.${name}
+
+### artifactName?
+
+readonly optional artifactName?: string | null
+
+The artifact file name template. Defaults to ${productName}-${version}.${ext} (some target can have other defaults, see corresponding options).
+
+#### Overrides
+
+TargetSpecificOptions.artifactName
+
+### asar?
+
+readonly optional asar?: boolean | AsarOptions | null
+
+Whether to package the application's source code into an archive, using Electron's archive format.
+
+Node modules that must be unpacked will be detected automatically. Use AsarOptions.unpack to specify additional files to unpack.
+
+#### Default
+
+true
+
+### compression?
+
+readonly optional compression?: CompressionLevel | null
+
+The compression level. If you want to rapidly test build, store can reduce build time significantly. maximum doesn't lead to noticeable size difference, but increase build time.
+
+#### Default
+
+normal
+
+### defaultArch?
+
+readonly optional defaultArch?: string
+
+The default architecture to build for when no --arch flag is specified.
+Defaults to the current machine's architecture.
+
+### detectUpdateChannel?
+
+readonly optional detectUpdateChannel?: boolean
+
+Whether to infer update channel from application version pre-release components. e.g. if version 0.12.1-alpha.1, channel will be set to alpha. Otherwise to latest.
+This does not apply to github publishing, which will never auto-detect the update channel.
+
+#### Default
+
+true
+
+### electronLanguages?
+
+readonly optional electronLanguages?: string | string[]
+
+The electron locales to keep. By default, all Electron locales used as-is.
+
+### electronUpdaterCompatibility?
+
+readonly optional electronUpdaterCompatibility?: string | null
+
+The electron-updater compatibility semver range.
+
+### executableName?
+
+readonly optional executableName?: string | null
+
+The executable name. Defaults to productName
+Note: Except for Linux, where this would constitute a breaking change in previous behavior and lead to both invalid executable names and Desktop files. Ref comments in: https://github.com/electron-userland/electron-builder/pull/9068
+
+### extraFiles?
+
+optional extraFiles?: string | FileSet | (string | FileSet)[] | null
+
+The same as extraResources but copy into the app's content directory (Contents for MacOS, root directory for Linux and Windows).
+
+#### Inherited from
+
+FilesBuildOptions.extraFiles
+
+### extraResources?
+
+optional extraResources?: string | FileSet | (string | FileSet)[] | null
+
+A glob patterns relative to the project directory, when specified, copy the file or directory with matching names directly into the app's resources directory (Contents/Resources for MacOS, resources for Linux and Windows).
+
+File patterns (and support for from and to fields) the same as for files.
+
+#### Inherited from
+
+FilesBuildOptions.extraResources
+
+### fileAssociations?
+
+readonly optional fileAssociations?: FileAssociation | FileAssociation[]
+
+The file associations.
+
+### files?
+
+optional files?: string | FileSet | (string | FileSet)[] | null
+
+A glob patterns relative to the app directory, which specifies which files to include when copying files to create the package.
+
+Defaults to:
+
+[
+
+"**/*",
+
+"!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+
+"!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
+
+"!**/node_modules/*.d.ts",
+
+"!**/node_modules/.bin",
+
+"!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,slnx,xproj}",
+
+"!.editorconfig",
+
+"!**/._*",
+
+"!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}",
+
+"!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}",
+
+"!**/{appveyor.yml,.travis.yml,circle.yml}",
+
+"!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
+
+]
+
+Development dependencies are never copied in any case. You don't need to ignore it explicitly. Hidden files are not ignored by default, but all files that should be ignored, are ignored by default.
+
+Default pattern **/* is not added to your custom if some of your patterns is not ignore (i.e. not starts with !). package.json and **/node_modules/**/* (only production dependencies will be copied) is added to your custom in any case. All default ignores are added in any case — you don't need to repeat it if you configure own patterns.
+
+May be specified in the platform options (e.g. in the mac).
+
+You may also specify custom source and destination directories by using FileSet objects instead of simple glob patterns.
+
+[
+
+{
+
+"from": "path/to/source",
+
+"to": "path/to/destination",
+
+"filter": ["**/*", "!foo/*.js"]
+
+}
+
+]
+
+You can use file macros in the from and to fields as well. from and to can be files and you can use this to rename a file while packaging.
+
+#### Inherited from
+
+FilesBuildOptions.files
+
+### forceCodeSigning?
+
+readonly optional forceCodeSigning?: boolean
+
+Whether to fail if app will be not code signed.
+
+#### Default
+
+false
+
+### generateUpdatesFilesForAllChannels?
+
+readonly optional generateUpdatesFilesForAllChannels?: boolean
+
+Please see Building and Releasing using Channels.
+
+#### Default
+
+false
+
+### protocols?
+
+readonly optional protocols?: Protocol | Protocol[]
+
+The URL protocol schemes.
+
+### publish?
+
+optional publish?: Publish
+
+Publisher configuration. See Auto Update for more information.
+
+#### Overrides
+
+TargetSpecificOptions.publish
+
+### releaseInfo?
+
+readonly optional releaseInfo?: ReleaseInfo
+
+The release info. Intended for command line usage:
+
+-c.releaseInfo.releaseNotes="new features"
+
+### target?
+
+readonly optional target?: string | TargetConfiguration | (string | TargetConfiguration)[] | null
+
+The build target(s) for this platform. Can be a target name string, a TargetConfiguration
+object, or an array of either. Available targets depend on the platform — see platform-specific
+options (e.g. MacConfiguration.target, WindowsConfiguration.target,
+LinuxConfiguration.target).
+
+### updateManifest?
+
+readonly optional updateManifest?: UpdateManifestSigningOptions | null
+
+Ed25519 signing of the auto-update manifest (latest*.yml). When configured, each manifest is signed
+and electron-updater verifies the signature (against the embedded public key) before downloading an update.
+Prefer supplying the key via the ELECTRON_BUILDER_UPDATE_SIGN_KEY / ELECTRON_BUILDER_UPDATE_SIGN_KEY_FILE environment variables in CI.
+
+## Metadata
+
+Some standard fields should be defined in the package.json.
+
+# Interface: Metadata
+
+## Properties
+
+### author?
+
+readonly optional author?: AuthorMetadata | null
+
+### build?
+
+readonly optional build?: Configuration
+
+The electron-builder configuration.
+
+### description?
+
+readonly optional description?: string
+
+The application description.
+
+### homepage?
+
+readonly optional homepage?: string | null
+
+The url to the project homepage (NuGet Package projectUrl (optional) or Linux Package URL (required)).
+
+If not specified and your project repository is public on GitHub, it will be https://github.com/${user}/${project} by default.
+
+### license?
+
+readonly optional license?: string | null
+
+linux-only. The license name.
+
+### name?
+
+readonly optional name?: string
+
+The application name. Required.
+
+### repository?
+
+readonly optional repository?: string | RepositoryInfo | null
+
+The repository.
+
+## Electron Download & Mirror
+
+electron-builder downloads the Electron distribution to package via @electron/get. Point it at a mirror (e.g. a corporate proxy or a China mirror) with the electronGet option:
+
+{
+
+"build": {
+
+"electronGet": {
+
+"mirrorOptions": { "mirror": "https://npmmirror.com/mirrors/electron/" }
+
+}
+
+}
+
+}
+
+v27: renamed from electronDownload
+This key was electronDownload in v26. In v27 it is electronGet, reshaped to @electron/get v5 options: the flat mirror moved under mirrorOptions.mirror, isVerifyChecksum: false became unsafelyDisableChecksums: true, and cache / customDir / customFilename / strictSSL / force were dropped. electron-builder migrate-schema performs the rename. See v27 Breaking Changes → electronGet.
+
+## Build Version Management
+
+CFBundleVersion (macOS) and FileVersion (Windows) will be set automatically to version.build_number on CI server (Travis, AppVeyor, CircleCI and Bamboo supported).
+
+## Build Hooks
+
+## Build Hooks
+
+Build hooks let you run custom code at specific points in the electron-builder build lifecycle. Use them to modify the app bundle, perform additional signing, upload symbols, or integrate with external services.
+
+## Build Lifecycle
+
+Hooks fire in this order during every build. Pick the hook that runs at the right stage for your task — modifying app files before signing, triggering external tools after all artifacts are ready, etc.
+
+HookWhen it firesCommon usebeforeBuildBefore native deps are installed/rebuiltSkip or customize native module rebuildbeforePackBefore files are copied into the app bundleInject generated files, modify source before packafterExtractAfter Electron binary is extractedModify the Electron binary or its resourcesafterPackAfter files are packaged, before signingModify app bundle structure, add unpacked filesafterSignAfter signing, before distributable is createdCustom post-sign steps, extra notarization workflowsartifactBuildStartedWhen each installer/image starts buildingPer-artifact logging or trackingartifactBuildCompletedWhen each installer/image finishesChecksum capture, per-artifact uploadafterAllArtifactBuildAfter all artifacts are doneUpload debug symbols, generate changelogs, return extra publish paths
+
+Hook execution is serial within each platform/arch combination. Async hooks are awaited before the build proceeds.
+
+Target-specific hooks (only fire for their respective target):
+
+- electronDist — supply a custom Electron binary
+
+- msiProjectCreated — edit WiX XML before MSI compilation
+
+- appxManifestCreated — edit AppX manifest XML before packaging
+
+- onNodeModuleFile — filter which node_modules files are included in the bundle
+
+## Defining Hooks
+
+Hooks can be defined in three ways:
+
+### 1. Inline Function (JS/TS config only)
+
+// electron-builder.config.js
+
+module.exports = {
+
+afterPack: async (context) => {
+
+console.log("afterPack:", context.appOutDir)
+
+}
+
+}
+
+### 2. Path to File
+
+Use a file path string when using JSON/YAML config, or when you want to keep hooks in separate files:
+
+# electron-builder.yml
+
+afterPack: ./scripts/afterPack.js
+
+// scripts/afterPack.js
+
+exports.default = async function(context) {
+
+console.log("afterPack:", context.appOutDir)
+
+}
+
+The function must be the default export of the module.
+
+### 3. Module ID
+
+Reference a node module:
+
+afterPack: my-electron-builder-plugin
+
+## Hook Reference
+
+### beforeBuild
+
+Runs before native dependencies are installed or rebuilt (before npm rebuild). Resolving to false skips dependency installation entirely.
+
+beforeBuild: async (context) => {
+
+// context: BeforeBuildContext
+
+// { appDir, electronVersion, platform, arch }
+
+console.log("Building for:", context.platform.name, context.arch)
+
+// return false to skip dependency install
+
+}
+
+### beforePack
+
+Runs before files are copied into the app bundle.
+
+beforePack: async (context) => {
+
+// context: BeforePackContext
+
+// { outDir, appOutDir, packager, electronPlatformName, arch, targets }
+
+}
+
+### afterExtract
+
+Runs after the Electron binary has been extracted into the output directory, before app files are placed. Useful for manipulating the Electron binary or its resources.
+
+afterExtract: async (context) => {
+
+// context: AfterExtractContext (same shape as PackContext)
+
+// { outDir, appOutDir, packager, electronPlatformName, arch, targets }
+
+}
+
+### afterPack
+
+Runs after the app is fully packaged but before code signing. This is the ideal hook for:
+
+- Modifying the app bundle structure
+
+- Adding files that should not be ASAR-archived
+
+- Running post-processing on the packaged app
+
+afterPack: async (context) => {
+
+// context: AfterPackContext
+
+// { outDir, appOutDir, packager, electronPlatformName, arch, targets }
+
+const path = require("path")
+
+const fs = require("fs")
+
+// Example: add a VERSION file to the app bundle
+
+const versionFile = path.join(context.appOutDir, "VERSION")
+
+fs.writeFileSync(versionFile, context.packager.appInfo.version)
+
+}
+
+### afterSign
+
+Runs after the app is signed but before the distributable (DMG, NSIS installer, etc.) is created. Commonly used for macOS notarization in custom workflows.
+
+afterSign: async (context) => {
+
+// context: AfterPackContext
+
+// { outDir, appOutDir, packager, electronPlatformName, arch, targets }
+
+}
+
+Notarization
+electron-builder has built-in notarization support via mac.notarize: true. Only use afterSign for notarization if you need a custom notarization workflow. See Notarization.
+
+### artifactBuildStarted
+
+Runs when an individual artifact (e.g., a DMG, an NSIS installer) starts being built.
+
+artifactBuildStarted: async (context) => {
+
+// context: ArtifactBuildStarted
+
+// { targetPresentableName, file, safeArtifactName, packager, arch }
+
+console.log("Building artifact:", context.targetPresentableName)
+
+}
+
+### artifactBuildCompleted
+
+Runs when an individual artifact finishes building.
+
+artifactBuildCompleted: async (context) => {
+
+// context: ArtifactCreated
+
+// { file, safeArtifactName, target, packager, publishConfig, isWriteUpdateInfo, updateInfo, sha2, sha512, artifactName, arch }
+
+console.log("Built:", context.file, "SHA512:", context.sha512)
+
+}
+
+### afterAllArtifactBuild
+
+Runs after all artifacts have been built. Can return an array of additional file paths to publish.
+
+afterAllArtifactBuild: async (buildResult) => {
+
+// buildResult: BuildResult
+
+// { outDir, artifactPaths, platformToTargets, configuration }
+
+// Example: upload debug symbols to Sentry
+
+for (const artifactPath of buildResult.artifactPaths) {
+
+if (artifactPath.endsWith('.dSYM') || artifactPath.endsWith('.pdb')) {
+
+await uploadSymbols(artifactPath)
+
+}
+
+}
+
+// Return additional files to publish
+
+return ["/path/to/additional-artifact.zip"]
+
+}
+
+### electronDist
+
+Provide a custom Electron binary instead of the standard downloaded one. The hook receives PrepareApplicationStageDirectoryOptions and should return the path to a custom Electron build or a directory of Electron zip files.
+
+electronDist: async (context) => {
+
+// Return path to custom Electron directory
+
+return "/path/to/custom/electron-dist"
+
+}
+
+### msiProjectCreated
+
+Runs after the WiX project has been created on disk but before it is compiled into an MSI. Receives the path to the WiX project directory.
+
+msiProjectCreated: async (wixProjectPath) => {
+
+// Modify WiX XML files at wixProjectPath
+
+}
+
+### appxManifestCreated
+
+Runs after the AppX manifest has been created but before the package is assembled. Receives the path to the manifest file.
+
+appxManifestCreated: async (manifestPath) => {
+
+// Modify the AppX manifest XML
+
+const fs = require("fs")
+
+let manifest = fs.readFileSync(manifestPath, "utf8")
+
+// ... modify manifest ...
+
+fs.writeFileSync(manifestPath, manifest)
+
+}
+
+### onNodeModuleFile
+
+Called for each file in node_modules during packaging. Return true to force-include, false to force-exclude, or undefined/void to use default behavior.
+
+onNodeModuleFile: async (filePath) => {
+
+// Exclude test files from all node_modules
+
+if (filePath.includes("__tests__") || filePath.endsWith(".test.js")) {
+
+return false
+
+}
+
+}
+
+## Common Hook Patterns
+
+### Modifying Info.plist After Pack
+
+const path = require("path")
+
+const plist = require("plist")
+
+const fs = require("fs")
+
+afterPack: async (context) => {
+
+if (context.electronPlatformName !== "darwin") return
+
+const plistPath = path.join(
+
+context.appOutDir,
+
+`${context.packager.appInfo.productFilename}.app`,
+
+"Contents",
+
+"Info.plist"
+
+)
+
+const plistData = plist.parse(fs.readFileSync(plistPath, "utf8"))
+
+plistData.LSUIElement = true // Hide from dock
+
+fs.writeFileSync(plistPath, plist.build(plistData))
+
+}
+
+### Custom Code Signing
+
+mac:
+
+sign: "./scripts/sign.js"
+
+// scripts/sign.js
+
+exports.default = async function(configuration) {
+
+// configuration: CustomMacSign
+
+// { path, packager, entitlements, ... }
+
+const { execSync } = require("child_process")
+
+execSync(`codesign --deep --sign "${configuration.identity}" "${configuration.path}"`)
+
+}
+
+### Uploading Symbols to Sentry
+
+afterAllArtifactBuild: async (buildResult) => {
+
+const { execSync } = require("child_process")
+
+const dsymPaths = buildResult.artifactPaths.filter(p => p.endsWith(".dSYM"))
+
+for (const dsym of dsymPaths) {
+
+execSync(`sentry-cli upload-dif ${dsym}`)
+
+}
+
+}
+
+### Generating a Changelog File
+
+afterAllArtifactBuild: async (buildResult) => {
+
+const fs = require("fs")
+
+const changelogPath = `${buildResult.outDir}/CHANGELOG.txt`
+
+fs.writeFileSync(changelogPath, generateChangelog())
+
+return [changelogPath] // include in publish
+
+}
+
+## Async and Error Handling
+
+All hooks support async functions. If a hook throws an error, the build fails:
+
+afterPack: async (context) => {
+
+try {
+
+await doSomething()
+
+} catch (err) {
+
+console.error("afterPack failed:", err)
+
+throw err // rethrow to fail the build
+
+}
+
+}
+
+## Debugging Hooks
+
+Add console.log or console.error inside your hooks — output appears in the electron-builder terminal output.
+
+Enable verbose electron-builder logging to see the full build lifecycle:
+
+DEBUG=electron-builder electron-builder build
+
+## Interface Reference
+
+{!./app-builder-lib.Interface.Hooks.md!}
+
+- Artifact File Name Template- Environment Variables from File- How to Read Docs- Common Configuration
+- Extended by- Properties- allowMissingDependencies?- apk?- appId?- appImage?- appx?- buildNumber?- buildVersion?- concurrency?- copyright?- deb?- directories?- dmg?- downloadAlternateFFmpeg?- electronFuses?- extraMetadata?- flatpak?- forceCodeSigning?- freebsd?- ignoredProductionDependencies?- includePdb?- linux?- mac?- mas?- masDev?- msi?- msiWrapped?- msix?- nativeModules?- npmArgs?- nsis?- nsisWeb?- p5p?- pacman?- pkg?- portable?- productName?- removePackageKeywords?- removePackageScripts?- rpm?- snapcraft?- squirrelWindows?- toolsets?- win?
+- Overridable per Platform Options- Base Configuration- Extends- Extended by- Properties- appId?- artifactName?- asar?- compression?- defaultArch?- detectUpdateChannel?- electronLanguages?- electronUpdaterCompatibility?- executableName?- extraFiles?- extraResources?- fileAssociations?- files?- forceCodeSigning?- generateUpdatesFilesForAllChannels?- protocols?- publish?- releaseInfo?- target?- updateManifest?
+- Metadata- Properties- author?- build?- description?- homepage?- license?- name?- repository?
+- Electron Download & Mirror- Build Version Management- Build Hooks- Build Hooks- Build Lifecycle- Defining Hooks- 1. Inline Function (JS/TS config only)- 2. Path to File- 3. Module ID
+- Hook Reference- beforeBuild- beforePack- afterExtract- afterPack- afterSign- artifactBuildStarted- artifactBuildCompleted- afterAllArtifactBuild- electronDist- msiProjectCreated- appxManifestCreated- onNodeModuleFile
+- Common Hook Patterns- Modifying Info.plist After Pack- Custom Code Signing- Uploading Symbols to Sentry- Generating a Changelog File
+- Async and Error Handling- Debugging Hooks- Interface Reference

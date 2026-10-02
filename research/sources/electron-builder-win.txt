@@ -1,0 +1,565 @@
+Source: https://www.electron.build/docs/win
+Text taken from the saved page; markup is flattened.
+
+On this page
+Upgrading from v26?
+Many configuration keys were renamed or restructured in v27 (e.g. mac.sign, win.sign, electronGet, asar, nativeModules, snapcraft). Run electron-builder migrate-schema to rewrite your config automatically, then skim What's New in v27 and the full v27 Breaking Changes.
+
+The top-level win key contains a set of options instructing electron-builder on how it should build Windows targets. These options are applicable to any Windows target.
+
+## Common Questions
+
+## How do you delegate code signing?
+
+In v27, all Windows signing is configured through the single win.sign discriminated union (type: "signtool" | "hsm" | "pkcs11" | "azure"). To delegate signing to a custom function, set the sign field on that union — it works for every type. See the Windows Code Signing guide and why sign.js is called 8 times.
+
+"win": {
+
+"sign": {
+
+"type": "signtool",
+
+"sign": "./customSign.js"
+
+}
+
+}
+
+Upgrading from v26
+The v26 win.signtoolOptions / win.azureSignOptions keys were removed — electron-builder migrate-schema rewrites them to win.sign automatically. See v27 Breaking Changes → Windows signing.
+
+File customSign.js in the project root directory:
+
+exports.default = async function(configuration) {
+
+// your custom code
+
+}
+
+## How do you use a custom verify function to enable nsis signature verification alternatives instead of powershell?
+
+Use the verifyUpdateCodeSignature interface:
+
+/**
+
+* return null if verify signature succeed
+
+* return error message if verify signature failed
+
+*/
+
+export type verifyUpdateCodeSignature = (publisherName: string[], path: string) => Promise<string | null>
+
+Pass a custom verify function to the nsis updater. For example, if you want to use a native verify function, you can use win-verify-signature.
+
+import { NsisUpdater } from "electron-updater"
+
+import { verifySignatureByPublishName } from "win-verify-signature"
+
+// Or MacUpdater, AppImageUpdater
+
+export default class AppUpdater {
+
+constructor() {
+
+const options = {
+
+requestHeaders: {
+
+// Any request headers to include here
+
+},
+
+provider: 'generic',
+
+url: 'https://example.com/auto-updates'
+
+}
+
+const autoUpdater = new NsisUpdater(options)
+
+autoUpdater.verifyUpdateCodeSignature = (publisherName: string[], path: string) => {
+
+const result = verifySignatureByPublishName(path, publisherName);
+
+if(result.signed) return Promise.resolve(null);
+
+return Promise.resolve(result.message);
+
+}
+
+autoUpdater.addAuthHeader(`Bearer ${token}`)
+
+autoUpdater.checkForUpdatesAndNotify()
+
+}
+
+}
+
+## How do you create a Parallels Windows 10 Virtual Machine?
+
+Disable "Share Mac user folders with Windows"
+If you use Parallels, you must not use "Share Mac user folders with Windows" feature and must not run installers from such folders.
+
+You don't need to have a Windows 10 license. A free license is provided (expires after 90 days, but this is not a problem because no additional setup is required).
+
+- Open Parallels Desktop.
+
+- File -> New.
+
+- Select "Modern.IE" in the "Free Systems".
+
+- Continue, Continue, Accept software license agreement.
+
+- Select "Microsoft Edge on Windows 10".
+
+- The next steps are general, see Installing Windows on your Mac using Parallels Desktop from "Step 6: Specify a name and location".
+
+Parallels Windows 10 VM will be used automatically to build AppX on macOS. No need even start VM — it will be started automatically on demand and suspended after build. No need to specify VM — it will be detected automatically (first Windows 10 VM will be used).
+
+## How do you create a VirtualBox Windows 10 Virtual Machine?
+
+If you are not on macOS or don't want to buy Parallels Desktop, you can use free VirtualBox.
+
+- Open Download virtual machines.
+
+- Select "MSEdge on Win10 (x64) Stable".
+
+- Select "VirtualBox" platform.
+
+- Download. See installation instructions.
+
+The password to your VM is Passw0rd!.
+
+VirtualBox is not supported by electron-builder for now, so you need to set up the build environment on Windows if you want to use VirtualBox to build AppX (and other Windows-only tasks).
+
+## Configuration
+
+# Interface: WindowsConfiguration
+
+## Extends
+
+- PlatformSpecificBuildOptions
+
+## Properties
+
+### appId?
+
+readonly optional appId?: string | null
+
+The application id. Used as CFBundleIdentifier for MacOS and as
+Application User Model ID for Windows (NSIS target only, Squirrel.Windows not supported). It is strongly recommended that an explicit ID is set.
+
+#### Default
+
+com.electron.${name}
+
+#### Inherited from
+
+PlatformSpecificBuildOptions.appId
+
+### artifactName?
+
+readonly optional artifactName?: string | null
+
+The artifact file name template. Defaults to ${productName}-${version}.${ext} (some target can have other defaults, see corresponding options).
+
+#### Inherited from
+
+PlatformSpecificBuildOptions.artifactName
+
+### asar?
+
+readonly optional asar?: boolean | AsarOptions | null
+
+Whether to package the application's source code into an archive, using Electron's archive format.
+
+Node modules that must be unpacked will be detected automatically. Use AsarOptions.unpack to specify additional files to unpack.
+
+#### Default
+
+true
+
+#### Inherited from
+
+PlatformSpecificBuildOptions.asar
+
+### compression?
+
+readonly optional compression?: CompressionLevel | null
+
+The compression level. If you want to rapidly test build, store can reduce build time significantly. maximum doesn't lead to noticeable size difference, but increase build time.
+
+#### Default
+
+normal
+
+#### Inherited from
+
+PlatformSpecificBuildOptions.compression
+
+### defaultArch?
+
+readonly optional defaultArch?: string
+
+The default architecture to build for when no --arch flag is specified.
+Defaults to the current machine's architecture.
+
+#### Inherited from
+
+PlatformSpecificBuildOptions.defaultArch
+
+### detectUpdateChannel?
+
+readonly optional detectUpdateChannel?: boolean
+
+Whether to infer update channel from application version pre-release components. e.g. if version 0.12.1-alpha.1, channel will be set to alpha. Otherwise to latest.
+This does not apply to github publishing, which will never auto-detect the update channel.
+
+#### Default
+
+true
+
+#### Inherited from
+
+PlatformSpecificBuildOptions.detectUpdateChannel
+
+### electronLanguages?
+
+readonly optional electronLanguages?: string | string[]
+
+The electron locales to keep. By default, all Electron locales used as-is.
+
+#### Inherited from
+
+PlatformSpecificBuildOptions.electronLanguages
+
+### electronUpdaterCompatibility?
+
+readonly optional electronUpdaterCompatibility?: string | null
+
+The electron-updater compatibility semver range.
+
+#### Inherited from
+
+PlatformSpecificBuildOptions.electronUpdaterCompatibility
+
+### executableName?
+
+readonly optional executableName?: string | null
+
+The executable name. Defaults to productName
+Note: Except for Linux, where this would constitute a breaking change in previous behavior and lead to both invalid executable names and Desktop files. Ref comments in: https://github.com/electron-userland/electron-builder/pull/9068
+
+#### Inherited from
+
+PlatformSpecificBuildOptions.executableName
+
+### extraFiles?
+
+optional extraFiles?: string | FileSet | (string | FileSet)[] | null
+
+The same as extraResources but copy into the app's content directory (Contents for MacOS, root directory for Linux and Windows).
+
+#### Inherited from
+
+PlatformSpecificBuildOptions.extraFiles
+
+### extraResources?
+
+optional extraResources?: string | FileSet | (string | FileSet)[] | null
+
+A glob patterns relative to the project directory, when specified, copy the file or directory with matching names directly into the app's resources directory (Contents/Resources for MacOS, resources for Linux and Windows).
+
+File patterns (and support for from and to fields) the same as for files.
+
+#### Inherited from
+
+PlatformSpecificBuildOptions.extraResources
+
+### fileAssociations?
+
+readonly optional fileAssociations?: FileAssociation | FileAssociation[]
+
+The file associations.
+
+#### Inherited from
+
+PlatformSpecificBuildOptions.fileAssociations
+
+### files?
+
+optional files?: string | FileSet | (string | FileSet)[] | null
+
+A glob patterns relative to the app directory, which specifies which files to include when copying files to create the package.
+
+Defaults to:
+
+[
+
+"**/*",
+
+"!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+
+"!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
+
+"!**/node_modules/*.d.ts",
+
+"!**/node_modules/.bin",
+
+"!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,slnx,xproj}",
+
+"!.editorconfig",
+
+"!**/._*",
+
+"!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}",
+
+"!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}",
+
+"!**/{appveyor.yml,.travis.yml,circle.yml}",
+
+"!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
+
+]
+
+Development dependencies are never copied in any case. You don't need to ignore it explicitly. Hidden files are not ignored by default, but all files that should be ignored, are ignored by default.
+
+Default pattern **/* is not added to your custom if some of your patterns is not ignore (i.e. not starts with !). package.json and **/node_modules/**/* (only production dependencies will be copied) is added to your custom in any case. All default ignores are added in any case — you don't need to repeat it if you configure own patterns.
+
+May be specified in the platform options (e.g. in the mac).
+
+You may also specify custom source and destination directories by using FileSet objects instead of simple glob patterns.
+
+[
+
+{
+
+"from": "path/to/source",
+
+"to": "path/to/destination",
+
+"filter": ["**/*", "!foo/*.js"]
+
+}
+
+]
+
+You can use file macros in the from and to fields as well. from and to can be files and you can use this to rename a file while packaging.
+
+#### Inherited from
+
+PlatformSpecificBuildOptions.files
+
+### forceCodeSigning?
+
+readonly optional forceCodeSigning?: boolean
+
+Whether to fail if app will be not code signed.
+
+#### Default
+
+false
+
+#### Inherited from
+
+PlatformSpecificBuildOptions.forceCodeSigning
+
+### generateUpdatesFilesForAllChannels?
+
+readonly optional generateUpdatesFilesForAllChannels?: boolean
+
+Please see Building and Releasing using Channels.
+
+#### Default
+
+false
+
+#### Inherited from
+
+PlatformSpecificBuildOptions.generateUpdatesFilesForAllChannels
+
+### icon?
+
+readonly optional icon?: string | null
+
+The path to application icon.
+
+#### Default
+
+build/icon.ico
+
+#### Overrides
+
+PlatformSpecificBuildOptions.icon
+
+### legalTrademarks?
+
+readonly optional legalTrademarks?: string | null
+
+The trademarks and registered trademarks.
+
+### protocols?
+
+readonly optional protocols?: Protocol | Protocol[]
+
+The URL protocol schemes.
+
+#### Inherited from
+
+PlatformSpecificBuildOptions.protocols
+
+### publish?
+
+optional publish?: Publish
+
+Publisher configuration. See Auto Update for more information.
+
+#### Inherited from
+
+PlatformSpecificBuildOptions.publish
+
+### releaseInfo?
+
+readonly optional releaseInfo?: ReleaseInfo
+
+The release info. Intended for command line usage:
+
+-c.releaseInfo.releaseNotes="new features"
+
+#### Inherited from
+
+PlatformSpecificBuildOptions.releaseInfo
+
+### requestedExecutionLevel?
+
+readonly optional requestedExecutionLevel?: RequestedExecutionLevel | null
+
+The security level at which the application requests to be executed.
+Cannot be specified per target, allowed only in the win.
+
+#### Default
+
+asInvoker
+
+### sign?
+
+readonly optional sign?: false | WindowsSigningConfiguration | null
+
+Code signing configuration. Code signing stamps every installer and executable
+electron-builder produces with an Authenticode signature, so that Windows (SmartScreen / UAC)
+and your auto-updater can verify the publisher and that the files were not tampered with.
+
+How this option behaves:
+
+-
+Leave unset to sign using credentials discovered from the environment — primarily a
+certificate supplied via WIN_CSC_LINK (or CSC_LINK) with its password in
+WIN_CSC_KEY_PASSWORD (or CSC_KEY_PASSWORD). WIN_CSC_LINK accepts a file path, an
+https:// URL, or a base64-encoded certificate. This is the recommended setup for CI.
+
+-
+Set to false or null to disable code signing entirely (executable resources such as
+the icon and metadata are still edited).
+
+-
+Set to an object to configure signing explicitly. The required type field selects the
+signing backend (signtool, hsm, pkcs11, or azure) and dispatches to a dedicated sign
+manager; provide exactly one of the modes below. When win.sign is left unset, the signtool
+backend is used with env-discovered credentials. Each output artifact is signed individually,
+and by default executables are dual-signed (see signingHashAlgorithms).
+
+-
+{ type: "signtool", ... } — Sign with a local certificate file (.pfx/.p12) or a
+certificate from the Windows certificate store. Uses Microsoft signtool.exe on Windows and
+osslsigncode on macOS/Linux.
+
+-
+{ type: "hsm", ... } — Sign using a Hardware Security Module (HSM) or FIPS-compliant
+hardware token via signtool's /csp (cryptographic service provider) and /kc (key
+container) flags. Requires a modern winCodeSign toolset (the default — only the legacy
+"0.0.0" pin is unsupported). Windows-only.
+
+-
+{ type: "pkcs11", ... } — Sign using a PKCS#11 hardware token via osslsigncode.
+Available on macOS and Linux CI without a Windows VM.
+
+-
+{ type: "azure", ... } — Sign via Azure Trusted Signing (cloud service). Requires
+Azure Entra ID environment variables for authentication.
+
+See Code Signing.
+
+### signExts?
+
+readonly optional signExts?: string[] | null
+
+Additional file name suffixes to code sign, beyond the default. By default electron-builder
+only signs .exe files; list extra suffixes here to also sign e.g. .dll, .node, or
+specific file names. Advanced option — most apps do not need it.
+
+Each entry is matched with String.endsWith, so both bare extensions (".dll") and full file
+names ("mybinary.dll") work. Prefix a pattern with ! to exclude a suffix that would
+otherwise be signed. Positive patterns are evaluated first, then negative ones. For example,
+["somefilename", ".dll", "!.appx"] signs .dll files (and anything ending in somefilename)
+but never signs .appx files.
+
+#### See
+
+https://github.com/electron-userland/electron-builder/issues/7329
+
+#### Default
+
+null
+
+### target?
+
+readonly optional target?: TargetConfigType
+
+The target package type: list of nsis, nsis-web (Web installer), portable (portable app without installation), appx, msix, msi, msi-wrapped, squirrel, 7z, zip, tar.xz, tar.lz, tar.gz, tar.bz2, dir.
+AppX and MSIX packages can be built on Windows 10 or Windows Server 2012 R2 (version 6.3+) or later, and on macOS via Parallels Desktop.
+
+To use Squirrel.Windows please install electron-builder-squirrel-windows dependency.
+
+#### Default
+
+nsis
+
+#### Overrides
+
+PlatformSpecificBuildOptions.target
+
+### updateManifest?
+
+readonly optional updateManifest?: UpdateManifestSigningOptions | null
+
+Ed25519 signing of the auto-update manifest (latest*.yml). When configured, each manifest is signed
+and electron-updater verifies the signature (against the embedded public key) before downloading an update.
+Prefer supplying the key via the ELECTRON_BUILDER_UPDATE_SIGN_KEY / ELECTRON_BUILDER_UPDATE_SIGN_KEY_FILE environment variables in CI.
+
+#### Inherited from
+
+PlatformSpecificBuildOptions.updateManifest
+
+### verifyUpdateCodeSignature?
+
+readonly optional verifyUpdateCodeSignature?: boolean
+
+Whether the NSIS auto-updater should verify the Authenticode signature of a downloaded update
+before installing it. This is a runtime check performed by your app via electron-updater,
+not a build-time check.
+
+When enabled (the default), the resolved publisher name is embedded into
+app-update.yml at build time. At update time electron-updater inspects the certificate that
+signed the downloaded installer and compares its subject (Distinguished Name / Common Name)
+against that publisher name, refusing to install on a mismatch. This prevents a tampered or
+maliciously substituted update from being installed.
+
+Set to false to skip verification — in which case the publisher name is not embedded.
+Disable this only if your updates are not Authenticode-signed.
+
+#### Default
+
+true
+
+- Common Questions- How do you delegate code signing?- How do you use a custom verify function to enable nsis signature verification alternatives instead of powershell?- How do you create a Parallels Windows 10 Virtual Machine?- How do you create a VirtualBox Windows 10 Virtual Machine?- Configuration- Extends- Properties- appId?- artifactName?- asar?- compression?- defaultArch?- detectUpdateChannel?- electronLanguages?- electronUpdaterCompatibility?- executableName?- extraFiles?- extraResources?- fileAssociations?- files?- forceCodeSigning?- generateUpdatesFilesForAllChannels?- icon?- legalTrademarks?- protocols?- publish?- releaseInfo?- requestedExecutionLevel?- sign?- signExts?- target?- updateManifest?- verifyUpdateCodeSignature?

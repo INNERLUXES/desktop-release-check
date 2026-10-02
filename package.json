@@ -1,0 +1,50 @@
+{
+  "name": "desktop-release-check",
+  "version": "1.0.0",
+  "description": "Check the release setup of an Electron or Tauri desktop app before it ships, from its files only: the Electron version against Electron's support policy, webPreferences security settings, Windows signing, macOS hardened runtime and notarization, auto-update over plain http or without a Tauri pubkey, and checked-in certificate or key files, each with the file and line. Never runs a build, no dependencies.",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "bin": {
+    "desktop-release-check": "bin/desktop-release-check.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "docs",
+    "examples",
+    "research",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.js\"",
+    "test:coverage": "node --test --experimental-test-coverage \"test/*.test.js\"",
+    "check": "node tools/check.mjs",
+    "example": "node tools/example.mjs"
+  },
+  "keywords": [
+    "electron",
+    "tauri",
+    "desktop",
+    "release",
+    "code-signing",
+    "notarization",
+    "auto-update",
+    "security",
+    "electron-builder",
+    "cli"
+  ],
+  "author": "INNERLUXES <info@innerluxes.dev>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/INNERLUXES/desktop-release-check.git"
+  },
+  "homepage": "https://innerluxes.dev/application/development/desktop"
+}

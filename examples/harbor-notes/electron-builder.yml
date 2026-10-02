@@ -1,0 +1,12 @@
+appId: com.example.harbornotes
+productName: Harbor Notes
+win:
+  target: nsis
+mac:
+  target:
+    - dmg
+  sign:
+    identity: "Developer ID Application: Harbor Notes Ltd (ABCDE12345)"
+publish:
+  provider: generic
+  url: http://updates.example.com/harbor-notes

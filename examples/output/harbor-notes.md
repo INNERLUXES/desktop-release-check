@@ -1,0 +1,32 @@
+## desktop-release-check: 5 error, 2 warning, 0 info
+
+Project: `examples/harbor-notes` (electron).
+
+| Check | Result | Detail |
+| --- | --- | --- |
+| 1. Electron version | **fail** | electron 30.1.0 (major 30) is unsupported |
+| 2. Electron security settings | **fail** | 1 webPreferences object in 1 file: 2 unsafe, 3 found, 2 not found in source |
+| 3. Windows signing | warn | electron-builder: not configured |
+| 4. macOS signing and notarization | warn | electron-builder: configured, hardened runtime default, notarization not enabled |
+| 5. Auto-update | **fail** | electron: publish; 1 problem |
+| 6. Certificate and key files | **fail** | 1 file |
+
+| webPreferences setting | Where | Value |
+| --- | --- | --- |
+| nodeIntegration | examples/harbor-notes/src/main.js:9 | **true** |
+| contextIsolation | examples/harbor-notes/src/main.js:10 | **false** |
+| sandbox | examples/harbor-notes/src/main.js:11 | true |
+| webSecurity | | not found in source |
+| allowRunningInsecureContent | | not found in source |
+
+| Severity | Check | Where | Message | Fix |
+| --- | --- | --- | --- | --- |
+| error | electron-unsupported | examples/harbor-notes/package.json:7 | electron "30.1.0" (examples/harbor-notes/package.json:7) is major 30. Electron's support policy: "The latest three stable major versions are supported by the Electron team"; in test/fixtures/releases.json the latest stable major is 44, so the supported majors are 44, 43, 42 | Upgrade to Electron 44, one major at a time. The security page asks to "16. Use a current version of Electron" |
+| error | insecure-node-integration | examples/harbor-notes/src/main.js:9 | nodeIntegration: true (examples/harbor-notes/src/main.js:9) breaks item "2. Do not enable Node.js integration for remote content" of the Electron security checklist. It matters most for a window that loads remote content, which the tool cannot see | Set nodeIntegration to false, or remove it; see https://www.electronjs.org/docs/latest/tutorial/security |
+| error | insecure-context-isolation | examples/harbor-notes/src/main.js:10 | contextIsolation: false (examples/harbor-notes/src/main.js:10) breaks item "3. Enable Context Isolation" of the Electron security checklist. It matters most for a window that loads remote content, which the tool cannot see | Set contextIsolation to true, or remove it; see https://www.electronjs.org/docs/latest/tutorial/security |
+| error | update-insecure-url | examples/harbor-notes/electron-builder.yml:12 | publish.url is http://updates.example.com/harbor-notes (examples/harbor-notes/electron-builder.yml:12): updates are fetched over plain http, so anyone on the network path can read or replace what the app downloads | Use an https:// address |
+| error | committed-key-file | examples/harbor-notes/build/FAKE-signing-certificate.pfx:1 | examples/harbor-notes/build/FAKE-signing-certificate.pfx (.pfx) is a certificate or private key file inside the project. Its contents are not shown. If git tracks it, anyone with the repository has the key | Remove it from the project and from the git history, revoke the certificate if it was ever pushed, and give the signing step the key from a secret store or an environment variable |
+| warning | windows-signing-missing | examples/harbor-notes/electron-builder.yml:3 | No Windows code signing is configured (electron-builder). electron-builder also signs with a certificate from the WIN_CSC_LINK or CSC_LINK environment variable, which the files cannot show. Microsoft's code signing page says signing consecutive releases "with a consistent publisher/signing identity lets publisher reputation build over time", which an unsigned app cannot do (https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/code-signing-options) | Set win.sign with a type of signtool, hsm, pkcs11 or azure |
+| warning | macos-notarization-missing | examples/harbor-notes/electron-builder.yml:5 | Notarization is not enabled in examples/harbor-notes/electron-builder.yml:5 (mac.notarize). Apple's notarization page (https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution): "Notarize your macOS software to give users more confidence that the Developer ID-signed software you distribute has been checked by Apple for malicious components" | Set mac.notarize to true and give the Apple credentials as environment variables (docs/rules-and-sources.md) |
+
+**Gate failed:** 5 errors.

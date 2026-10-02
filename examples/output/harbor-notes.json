@@ -1,0 +1,290 @@
+{
+  "tool": "desktop-release-check",
+  "version": "1.0.0",
+  "project": {
+    "path": "examples/harbor-notes",
+    "kinds": [
+      "electron"
+    ]
+  },
+  "platforms": [
+    "windows",
+    "macos"
+  ],
+  "electron": {
+    "declared": {
+      "spec": "30.1.0",
+      "file": "examples/harbor-notes/package.json",
+      "line": 7,
+      "section": "devDependencies",
+      "major": 30,
+      "minor": 1,
+      "operator": "exact"
+    },
+    "releases": {
+      "file": "test/fixtures/releases.json",
+      "latestMajor": 44,
+      "supported": [
+        44,
+        43,
+        42
+      ]
+    },
+    "state": "unsupported",
+    "latestMinor": null
+  },
+  "source": {
+    "files": 1,
+    "objects": 1,
+    "filesWithObjects": 1,
+    "roots": [
+      "src"
+    ]
+  },
+  "settings": [
+    {
+      "setting": "nodeIntegration",
+      "item": "2. Do not enable Node.js integration for remote content",
+      "status": "found",
+      "unsafeValue": "true",
+      "defaultSince": {
+        "major": 5,
+        "text": "This recommendation is the default behavior in Electron since 5.0.0"
+      },
+      "locations": [
+        {
+          "file": "examples/harbor-notes/src/main.js",
+          "line": 9,
+          "value": "true",
+          "unsafe": true
+        }
+      ]
+    },
+    {
+      "setting": "contextIsolation",
+      "item": "3. Enable Context Isolation",
+      "status": "found",
+      "unsafeValue": "false",
+      "defaultSince": {
+        "major": 12,
+        "text": "Context Isolation is the default behavior in Electron since 12.0.0"
+      },
+      "locations": [
+        {
+          "file": "examples/harbor-notes/src/main.js",
+          "line": 10,
+          "value": "false",
+          "unsafe": true
+        }
+      ]
+    },
+    {
+      "setting": "sandbox",
+      "item": "4. Enable process sandboxing",
+      "status": "found",
+      "unsafeValue": "false",
+      "defaultSince": {
+        "major": 20,
+        "text": "This recommendation is the default behavior in Electron since 20.0.0"
+      },
+      "locations": [
+        {
+          "file": "examples/harbor-notes/src/main.js",
+          "line": 11,
+          "value": "true",
+          "unsafe": false
+        }
+      ]
+    },
+    {
+      "setting": "webSecurity",
+      "item": "6. Do not disable webSecurity",
+      "status": "not found in source",
+      "unsafeValue": "false",
+      "defaultSince": null,
+      "locations": []
+    },
+    {
+      "setting": "allowRunningInsecureContent",
+      "item": "8. Do not enable allowRunningInsecureContent",
+      "status": "not found in source",
+      "unsafeValue": "true",
+      "defaultSince": null,
+      "locations": []
+    }
+  ],
+  "signing": {
+    "windows": [
+      {
+        "packager": "electron-builder",
+        "state": "missing",
+        "file": "examples/harbor-notes/electron-builder.yml",
+        "line": 3,
+        "how": null
+      }
+    ],
+    "macos": [
+      {
+        "packager": "electron-builder",
+        "state": "configured",
+        "file": "examples/harbor-notes/electron-builder.yml",
+        "line": 9,
+        "how": "mac.sign.identity",
+        "hardenedRuntime": "default",
+        "notarization": "missing"
+      }
+    ]
+  },
+  "update": [
+    {
+      "packager": "electron",
+      "present": true,
+      "file": "examples/harbor-notes/electron-builder.yml",
+      "line": 10,
+      "how": "publish"
+    }
+  ],
+  "keyFiles": {
+    "scanned": 1,
+    "found": [
+      {
+        "file": "examples/harbor-notes/build/FAKE-signing-certificate.pfx",
+        "kind": ".pfx"
+      }
+    ]
+  },
+  "checks": [
+    {
+      "n": 1,
+      "id": "electron-support",
+      "name": "Electron version",
+      "result": "fail",
+      "detail": "electron 30.1.0 (major 30) is unsupported"
+    },
+    {
+      "n": 2,
+      "id": "electron-security",
+      "name": "Electron security settings",
+      "result": "fail",
+      "detail": "1 webPreferences object in 1 file: 2 unsafe, 3 found, 2 not found in source"
+    },
+    {
+      "n": 3,
+      "id": "windows-signing",
+      "name": "Windows signing",
+      "result": "warn",
+      "detail": "electron-builder: not configured"
+    },
+    {
+      "n": 4,
+      "id": "macos-signing",
+      "name": "macOS signing and notarization",
+      "result": "warn",
+      "detail": "electron-builder: configured, hardened runtime default, notarization not enabled"
+    },
+    {
+      "n": 5,
+      "id": "auto-update",
+      "name": "Auto-update",
+      "result": "fail",
+      "detail": "electron: publish; 1 problem"
+    },
+    {
+      "n": 6,
+      "id": "key-files",
+      "name": "Certificate and key files",
+      "result": "fail",
+      "detail": "1 file"
+    }
+  ],
+  "findings": [
+    {
+      "id": "electron-unsupported",
+      "severity": "error",
+      "check": 1,
+      "file": "examples/harbor-notes/package.json",
+      "line": 7,
+      "subject": "electron",
+      "message": "electron \"30.1.0\" (examples/harbor-notes/package.json:7) is major 30. Electron's support policy: \"The latest three stable major versions are supported by the Electron team\"; in test/fixtures/releases.json the latest stable major is 44, so the supported majors are 44, 43, 42",
+      "fix": "Upgrade to Electron 44, one major at a time. The security page asks to \"16. Use a current version of Electron\"",
+      "source": "https://www.electronjs.org/docs/latest/tutorial/electron-timelines"
+    },
+    {
+      "id": "insecure-node-integration",
+      "severity": "error",
+      "check": 2,
+      "file": "examples/harbor-notes/src/main.js",
+      "line": 9,
+      "subject": "nodeIntegration",
+      "message": "nodeIntegration: true (examples/harbor-notes/src/main.js:9) breaks item \"2. Do not enable Node.js integration for remote content\" of the Electron security checklist. It matters most for a window that loads remote content, which the tool cannot see",
+      "fix": "Set nodeIntegration to false, or remove it; see https://www.electronjs.org/docs/latest/tutorial/security",
+      "source": "https://www.electronjs.org/docs/latest/tutorial/security"
+    },
+    {
+      "id": "insecure-context-isolation",
+      "severity": "error",
+      "check": 2,
+      "file": "examples/harbor-notes/src/main.js",
+      "line": 10,
+      "subject": "contextIsolation",
+      "message": "contextIsolation: false (examples/harbor-notes/src/main.js:10) breaks item \"3. Enable Context Isolation\" of the Electron security checklist. It matters most for a window that loads remote content, which the tool cannot see",
+      "fix": "Set contextIsolation to true, or remove it; see https://www.electronjs.org/docs/latest/tutorial/security",
+      "source": "https://www.electronjs.org/docs/latest/tutorial/security"
+    },
+    {
+      "id": "update-insecure-url",
+      "severity": "error",
+      "check": 5,
+      "file": "examples/harbor-notes/electron-builder.yml",
+      "line": 12,
+      "subject": "publish.url",
+      "message": "publish.url is http://updates.example.com/harbor-notes (examples/harbor-notes/electron-builder.yml:12): updates are fetched over plain http, so anyone on the network path can read or replace what the app downloads",
+      "fix": "Use an https:// address",
+      "source": "https://www.electron.build/docs/publish"
+    },
+    {
+      "id": "committed-key-file",
+      "severity": "error",
+      "check": 6,
+      "file": "examples/harbor-notes/build/FAKE-signing-certificate.pfx",
+      "line": 1,
+      "subject": ".pfx",
+      "message": "examples/harbor-notes/build/FAKE-signing-certificate.pfx (.pfx) is a certificate or private key file inside the project. Its contents are not shown. If git tracks it, anyone with the repository has the key",
+      "fix": "Remove it from the project and from the git history, revoke the certificate if it was ever pushed, and give the signing step the key from a secret store or an environment variable",
+      "source": "https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/code-signing-options"
+    },
+    {
+      "id": "windows-signing-missing",
+      "severity": "warning",
+      "check": 3,
+      "file": "examples/harbor-notes/electron-builder.yml",
+      "line": 3,
+      "subject": "windows signing",
+      "message": "No Windows code signing is configured (electron-builder). electron-builder also signs with a certificate from the WIN_CSC_LINK or CSC_LINK environment variable, which the files cannot show. Microsoft's code signing page says signing consecutive releases \"with a consistent publisher/signing identity lets publisher reputation build over time\", which an unsigned app cannot do (https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/code-signing-options)",
+      "fix": "Set win.sign with a type of signtool, hsm, pkcs11 or azure",
+      "source": "https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/code-signing-options"
+    },
+    {
+      "id": "macos-notarization-missing",
+      "severity": "warning",
+      "check": 4,
+      "file": "examples/harbor-notes/electron-builder.yml",
+      "line": 5,
+      "subject": "notarization",
+      "message": "Notarization is not enabled in examples/harbor-notes/electron-builder.yml:5 (mac.notarize). Apple's notarization page (https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution): \"Notarize your macOS software to give users more confidence that the Developer ID-signed software you distribute has been checked by Apple for malicious components\"",
+      "fix": "Set mac.notarize to true and give the Apple credentials as environment variables (docs/rules-and-sources.md)",
+      "source": "https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution"
+    }
+  ],
+  "notes": [],
+  "counts": {
+    "error": 5,
+    "warning": 2,
+    "info": 0
+  },
+  "gate": {
+    "failOn": "error",
+    "pass": false,
+    "reason": "5 errors"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "harbor-notes",
+  "version": "1.2.1",
+  "description": "A made-up note taking app, with the problems of examples/harbor-notes corrected.",
+  "main": "src/main.js",
+  "dependencies": {
+    "electron-updater": "^6.0.0"
+  },
+  "devDependencies": {
+    "electron": "43.7.7"
+  }
+}

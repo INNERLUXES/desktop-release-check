@@ -1,0 +1,9 @@
+{
+  "name": "harbor-notes",
+  "version": "1.2.0",
+  "description": "A made-up note taking app, wrong on purpose.",
+  "main": "src/main.js",
+  "devDependencies": {
+    "electron": "30.1.0"
+  }
+}

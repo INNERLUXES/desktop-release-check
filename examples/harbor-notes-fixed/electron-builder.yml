@@ -1,0 +1,17 @@
+appId: com.example.harbornotes
+productName: Harbor Notes
+win:
+  target: nsis
+  sign:
+    type: signtool
+    certificateSubjectName: Harbor Notes Ltd
+mac:
+  target:
+    - dmg
+  notarize: true
+  sign:
+    identity: "Developer ID Application: Harbor Notes Ltd (ABCDE12345)"
+    hardenedRuntime: true
+publish:
+  provider: generic
+  url: https://updates.example.com/harbor-notes
